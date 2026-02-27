@@ -1,0 +1,1804 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data Analyzer</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f3f4f6;
+      --bg-alt: #eceef2;
+      --panel: rgba(255, 255, 255, 0.82);
+      --panel-strong: rgba(255, 255, 255, 0.96);
+      --line: rgba(15, 23, 42, 0.1);
+      --line-strong: rgba(15, 23, 42, 0.16);
+      --text: #111827;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --danger: #dc2626;
+      --chip: rgba(37, 99, 235, 0.08);
+      --canvas-bg: #fbfcfe;
+      --canvas-tint: rgba(37, 99, 235, 0.04);
+      --shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+      --tooltip-bg: rgba(17, 24, 39, 0.92);
+      --tooltip-text: #f9fafb;
+      --input-bg: rgba(255, 255, 255, 0.88);
+      --button-secondary-bg: #e5e7eb;
+      --button-secondary-text: #111827;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111315;
+        --bg-alt: #171a1d;
+        --panel: rgba(24, 27, 31, 0.84);
+        --panel-strong: rgba(28, 31, 36, 0.96);
+        --line: rgba(255, 255, 255, 0.08);
+        --line-strong: rgba(255, 255, 255, 0.14);
+        --text: #f3f4f6;
+        --muted: #9ca3af;
+        --accent: #60a5fa;
+        --danger: #f87171;
+        --chip: rgba(96, 165, 250, 0.12);
+        --canvas-bg: #16191d;
+        --canvas-tint: rgba(96, 165, 250, 0.06);
+        --shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+        --tooltip-bg: rgba(243, 244, 246, 0.94);
+        --tooltip-text: #111827;
+        --input-bg: rgba(34, 39, 46, 0.9);
+        --button-secondary-bg: #23272f;
+        --button-secondary-text: #f3f4f6;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(148, 163, 184, 0.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(96, 165, 250, 0.12), transparent 22%),
+        linear-gradient(180deg, var(--bg-alt) 0%, var(--bg) 100%);
+      min-height: 100vh;
+    }
+
+    .shell {
+      width: min(1380px, calc(100vw - 32px));
+      margin: 24px auto;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .sidebar {
+      padding: 22px;
+      position: sticky;
+      top: 20px;
+      max-height: calc(100vh - 40px);
+      overflow: auto;
+    }
+
+    .content {
+      padding: 22px;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: "Space Grotesk", "IBM Plex Sans", sans-serif;
+      letter-spacing: -0.03em;
+    }
+
+    h1 {
+      font-size: 30px;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+      margin-top: 22px;
+    }
+
+    .section {
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .section:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .dropzone {
+      border: 1.5px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+      border-radius: 18px;
+      padding: 18px;
+      background: color-mix(in srgb, var(--accent) 6%, transparent);
+    }
+
+    input[type="file"],
+    select,
+    input[type="date"],
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line-strong);
+      background: var(--input-bg);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: inherit;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    button {
+      border: 0;
+      background: var(--accent);
+      color: white;
+      font: inherit;
+      padding: 10px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: var(--button-secondary-bg);
+      color: var(--button-secondary-text);
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .dataset-meta {
+      display: grid;
+      gap: 4px;
+      margin-top: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--panel-strong) 86%, transparent);
+    }
+
+    .series-list,
+    .marker-list,
+    .stats {
+      display: grid;
+      gap: 10px;
+    }
+
+    .series-item,
+    .marker-item,
+    .stat-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel-strong);
+      padding: 12px;
+    }
+
+    .series-item {
+      display: grid;
+      gap: 10px;
+    }
+
+    .series-top,
+    .marker-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: var(--chip);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      flex: none;
+    }
+
+    .chart-card {
+      border-radius: 24px;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--panel-strong) 94%, transparent), color-mix(in srgb, var(--panel) 94%, transparent));
+      border: 1px solid var(--line);
+      padding: 16px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+
+    .toolbar-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, var(--canvas-tint), transparent 28%),
+        var(--canvas-bg);
+      border: 1px solid var(--line);
+      min-height: clamp(320px, 54vh, 560px);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: clamp(320px, 54vh, 560px);
+      cursor: grab;
+    }
+
+    canvas.dragging {
+      cursor: grabbing;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 16px;
+    }
+
+    .tooltip {
+      background: var(--tooltip-bg);
+      color: var(--tooltip-text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      min-width: 180px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 120ms ease, transform 120ms ease;
+      font-size: 13px;
+    }
+
+    .tooltip.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .empty {
+      min-height: clamp(320px, 54vh, 560px);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 32px;
+    }
+
+    .stats {
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      margin-top: 16px;
+    }
+
+    .stat-card strong {
+      display: block;
+      font-size: clamp(22px, 2vw, 28px);
+      color: var(--text);
+      font-family: "Space Grotesk", sans-serif;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .stat-card {
+      min-width: 0;
+    }
+
+    .stat-card .hint {
+      margin-bottom: 8px;
+    }
+
+    .stat-card.compact strong {
+      font-size: clamp(16px, 1.4vw, 20px);
+      line-height: 1.2;
+    }
+
+    .inline {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .inline > * {
+      flex: 1;
+    }
+
+    .marker-list button {
+      width: auto;
+      justify-self: start;
+    }
+
+    .danger {
+      background: color-mix(in srgb, var(--danger) 18%, transparent);
+      color: var(--danger);
+    }
+
+    .series-controls {
+      display: grid;
+      gap: 10px;
+    }
+
+    .series-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .series-grid input[type="range"] {
+      margin: 0;
+    }
+
+    .series-control-row,
+    .series-width-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .series-width {
+      display: grid;
+      gap: 8px;
+    }
+
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(8, 18px);
+      justify-content: start;
+      gap: 6px;
+    }
+
+    .palette-block {
+      display: grid;
+      gap: 8px;
+    }
+
+    .swatch {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      padding: 0;
+      min-width: 18px;
+      background: transparent;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+      display: inline-grid;
+      place-items: center;
+    }
+
+    .swatch.selected {
+      border-color: var(--text);
+      transform: scale(1.08);
+    }
+
+    .swatch span {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+    }
+
+    .marker-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .marker-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .marker-form .inline {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .marker-button-row {
+      display: flex;
+      justify-content: flex-start;
+      margin-top: 4px;
+    }
+
+    .unit-badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: var(--chip);
+      color: var(--muted);
+    }
+
+    .marker-list {
+      margin-top: 14px;
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 1080px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .content,
+      .sidebar {
+        padding: 18px;
+      }
+
+      canvas,
+      .empty,
+      .canvas-wrap {
+        min-height: 320px;
+        height: 320px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="panel sidebar">
+      <h1>Data Analyzer</h1>
+      <p>Load an export, choose series, and explore the chart locally.</p>
+
+      <div class="stack">
+        <section class="section">
+          <h2>File</h2>
+          <div class="dropzone">
+            <label>
+              <span>JSON or CSV</span>
+              <input id="fileInput" type="file" accept=".json,.csv,application/json,text/csv">
+            </label>
+            <div class="hint" id="fileStatus">No file selected yet.</div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>Series</h2>
+          <label>
+            <span>Detected datasets</span>
+            <select id="datasetSelect"></select>
+          </label>
+          <div class="dataset-meta" id="datasetMeta"></div>
+          <div class="series-list" id="seriesList"></div>
+        </section>
+
+        <section class="section">
+          <h2>Processing</h2>
+          <label>
+            <span>Smoothing: <strong id="smoothingLabel">0</strong></span>
+            <input id="smoothingRange" type="range" min="0" max="30" value="0">
+          </label>
+          <label>
+            <span>Smoothing mode</span>
+            <select id="smoothingMode">
+              <option value="movingAverage">Moving average</option>
+              <option value="ema">EMA</option>
+            </select>
+          </label>
+          <label>
+            <span>Point display</span>
+            <select id="pointMode">
+              <option value="auto">Auto</option>
+              <option value="always">Always</option>
+              <option value="never">Never</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="section">
+          <h2>Date Markers</h2>
+          <div class="marker-form">
+            <div class="inline">
+              <label>
+                <span>Date</span>
+                <input id="markerDate" type="date">
+              </label>
+              <div class="palette-block">
+                <span class="hint">Color</span>
+                <div id="markerPalette" class="palette"></div>
+              </div>
+            </div>
+            <label>
+              <span>Label</span>
+              <input id="markerLabel" type="text" placeholder="For example: treatment start">
+            </label>
+            <div class="marker-button-row">
+              <button id="addMarkerButton" type="button">Add marker</button>
+            </div>
+          </div>
+          <div class="marker-list" id="markerList"></div>
+        </section>
+      </div>
+    </aside>
+
+    <main class="panel content">
+      <div class="chart-card">
+        <div class="toolbar">
+          <div class="toolbar-group">
+            <button id="resetViewButton" type="button" class="secondary">Reset view</button>
+            <button id="fitSelectionButton" type="button" class="secondary">Fit selection</button>
+          </div>
+          <div class="toolbar-group">
+            <span class="chip" id="summaryChip">No data</span>
+          </div>
+        </div>
+
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="chartCanvas"></canvas>
+          <div class="overlay">
+            <div class="tooltip" id="tooltip"></div>
+          </div>
+          <div class="empty" id="emptyState">
+            <div>
+              <h3>The chart will appear here</h3>
+              <p>Load a file and select at least one data series.</p>
+            </div>
+          </div>
+        </div>
+        <div class="stats" id="stats"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const HEALTH_EXPORTER_NAMES = {
+      activeCalories: { label: "Active Calories", unitLabel: "kcal", kind: "activity" },
+      basalCalories: { label: "Basal Calories", unitLabel: "kcal", kind: "activity" },
+      bmi: { label: "BMI", unitLabel: "count", kind: "body" },
+      bodyFat: { label: "Body Fat", unitLabel: "%", kind: "body" },
+      exerciseMinutes: { label: "Exercise Minutes", unitLabel: "min", kind: "activity" },
+      flightsClimbed: { label: "Flights Climbed", unitLabel: "count", kind: "activity" },
+      heartRateVariability: { label: "Heart Rate Variability", unitLabel: "ms", kind: "vitals" },
+      leanBodyMass: { label: "Lean Body Mass", unitLabel: "kg", kind: "body" },
+      oxygenSaturation: { label: "Oxygen Saturation", unitLabel: "%", kind: "vitals" },
+      respiratoryRate: { label: "Respiratory Rate", unitLabel: "breaths/min", kind: "vitals" },
+      restingHeartRate: { label: "Resting Heart Rate", unitLabel: "bpm", kind: "vitals" },
+      sleepTime: { label: "Sleep Time", unitLabel: "min", kind: "recovery" },
+      stepCount: { label: "Step Count", unitLabel: "count", kind: "activity" },
+      vo2Max: { label: "VO2 Max", unitLabel: "mL/kg/min", kind: "fitness" },
+      walkingDistance: { label: "Walking Distance", unitLabel: "m", kind: "activity" },
+      walkingHeartRate: { label: "Walking Heart Rate", unitLabel: "bpm", kind: "vitals" },
+      weight: { label: "Weight", unitLabel: "kg", kind: "body" },
+      wristTemperature: { label: "Wrist Temperature", unitLabel: "°C", kind: "vitals" }
+    };
+
+    const palettes = {
+      light: ["#2563eb", "#0891b2", "#0f766e", "#16a34a", "#65a30d", "#ca8a04", "#ea580c", "#dc2626", "#db2777", "#9333ea", "#7c3aed", "#4f46e5", "#0284c7", "#475569", "#334155", "#7c2d12"],
+      dark: ["#60a5fa", "#22d3ee", "#2dd4bf", "#4ade80", "#a3e635", "#facc15", "#fb923c", "#f87171", "#f472b6", "#c084fc", "#a78bfa", "#818cf8", "#38bdf8", "#94a3b8", "#e5e7eb", "#fdba74"]
+    };
+
+    const state = {
+      sourceName: "",
+      datasets: [],
+      activeDatasetId: "",
+      selectedSeries: new Set(),
+      smoothingWindow: 0,
+      smoothingMode: "movingAverage",
+      pointMode: "auto",
+      markers: [],
+      markerDraftColor: "",
+      chart: {
+        viewMinX: null,
+        viewMaxX: null,
+        hover: null,
+        dragStart: null,
+        fullMinX: null,
+        fullMaxX: null,
+        gestureScale: null
+      }
+    };
+
+    const elements = {
+      fileInput: document.getElementById("fileInput"),
+      fileStatus: document.getElementById("fileStatus"),
+      datasetSelect: document.getElementById("datasetSelect"),
+      datasetMeta: document.getElementById("datasetMeta"),
+      seriesList: document.getElementById("seriesList"),
+      smoothingRange: document.getElementById("smoothingRange"),
+      smoothingLabel: document.getElementById("smoothingLabel"),
+      smoothingMode: document.getElementById("smoothingMode"),
+      pointMode: document.getElementById("pointMode"),
+      markerDate: document.getElementById("markerDate"),
+      markerPalette: document.getElementById("markerPalette"),
+      markerLabel: document.getElementById("markerLabel"),
+      addMarkerButton: document.getElementById("addMarkerButton"),
+      markerList: document.getElementById("markerList"),
+      resetViewButton: document.getElementById("resetViewButton"),
+      fitSelectionButton: document.getElementById("fitSelectionButton"),
+      summaryChip: document.getElementById("summaryChip"),
+      stats: document.getElementById("stats"),
+      canvasWrap: document.getElementById("canvasWrap"),
+      emptyState: document.getElementById("emptyState"),
+      chartCanvas: document.getElementById("chartCanvas"),
+      tooltip: document.getElementById("tooltip")
+    };
+
+    const ctx = elements.chartCanvas.getContext("2d");
+
+    function init() {
+      state.markerDraftColor = getColorPool()[0];
+      renderMarkerPalette();
+      bindEvents();
+      resizeCanvas();
+      renderAll();
+      window.addEventListener("resize", () => {
+        resizeCanvas();
+        drawChart();
+      });
+      watchThemeChanges();
+    }
+
+    function bindEvents() {
+      elements.fileInput.addEventListener("change", async (event) => {
+        const [file] = event.target.files || [];
+        if (!file) return;
+        state.sourceName = file.name;
+        elements.fileStatus.textContent = `Loaded: ${file.name}`;
+        const text = await file.text();
+        loadSource(file.name, text);
+      });
+
+      elements.datasetSelect.addEventListener("change", () => {
+        state.activeDatasetId = elements.datasetSelect.value;
+        autoSelectFirstSeries();
+        resetChartView();
+        renderAll();
+      });
+
+      elements.smoothingRange.addEventListener("input", () => {
+        state.smoothingWindow = Number(elements.smoothingRange.value);
+        elements.smoothingLabel.textContent = String(state.smoothingWindow);
+        renderAll();
+      });
+
+      elements.smoothingMode.addEventListener("change", () => {
+        state.smoothingMode = elements.smoothingMode.value;
+        renderAll();
+      });
+
+      elements.pointMode.addEventListener("change", () => {
+        state.pointMode = elements.pointMode.value;
+        drawChart();
+      });
+
+      elements.addMarkerButton.addEventListener("click", addMarker);
+      elements.resetViewButton.addEventListener("click", () => {
+        resetChartView();
+        drawChart();
+      });
+      elements.fitSelectionButton.addEventListener("click", () => {
+        fitToVisibleSeries();
+        drawChart();
+      });
+
+      elements.chartCanvas.addEventListener("wheel", handleWheel, { passive: false });
+      elements.chartCanvas.addEventListener("mousedown", handlePointerDown);
+      elements.chartCanvas.addEventListener("mousemove", handlePointerMove);
+      elements.chartCanvas.addEventListener("mouseleave", handlePointerLeave);
+      elements.chartCanvas.addEventListener("dblclick", () => {
+        resetChartView();
+        drawChart();
+      });
+      elements.chartCanvas.addEventListener("gesturestart", handleGestureStart);
+      elements.chartCanvas.addEventListener("gesturechange", handleGestureChange);
+      elements.chartCanvas.addEventListener("gestureend", handleGestureEnd);
+      window.addEventListener("mouseup", handlePointerUp);
+    }
+
+    function watchThemeChanges() {
+      const media = window.matchMedia("(prefers-color-scheme: dark)");
+      media.addEventListener("change", () => {
+        const pool = getColorPool();
+        state.datasets.forEach((dataset) => {
+          dataset.series.forEach((series, index) => {
+            if (!series.customColor) {
+              series.color = pool[index % pool.length];
+            }
+          });
+        });
+        if (!state.markers.length) {
+          state.markerDraftColor = pool[0];
+        }
+        renderMarkerPalette();
+        renderAll();
+      });
+    }
+
+    function resizeCanvas() {
+      const ratio = window.devicePixelRatio || 1;
+      const bounds = elements.canvasWrap.getBoundingClientRect();
+      const width = Math.max(320, Math.floor(bounds.width));
+      const height = Math.max(320, Math.floor(elements.chartCanvas.clientHeight || 520));
+      elements.chartCanvas.width = Math.floor(width * ratio);
+      elements.chartCanvas.height = Math.floor(height * ratio);
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    }
+
+    function loadSource(fileName, text) {
+      try {
+        let datasets = [];
+        if (fileName.toLowerCase().endsWith(".json")) {
+          datasets = parseJsonDatasets(text);
+        } else if (fileName.toLowerCase().endsWith(".csv")) {
+          datasets = parseCsvDatasets(text, fileName);
+        }
+
+        state.datasets = datasets;
+        state.activeDatasetId = datasets[0]?.id || "";
+        state.selectedSeries.clear();
+        autoSelectFirstSeries();
+        resetChartView();
+        renderAll();
+
+        if (!datasets.length) {
+          elements.fileStatus.textContent = `Loaded: ${fileName}. No suitable time series were found.`;
+        }
+      } catch (error) {
+        state.datasets = [];
+        state.activeDatasetId = "";
+        state.selectedSeries.clear();
+        resetChartView();
+        renderAll();
+        elements.fileStatus.textContent = `Could not parse ${fileName}: ${error.message}`;
+      }
+    }
+
+    function parseJsonDatasets(text) {
+      const json = JSON.parse(text);
+      if (isAppleHealthExporterPayload(json)) {
+        return parseAppleHealthExporterDatasets(json);
+      }
+
+      const datasets = [];
+
+      function visit(node, path) {
+        if (Array.isArray(node)) {
+          const dataset = makeDatasetFromArray(node, path.join(".") || "root");
+          if (dataset) datasets.push(dataset);
+          return;
+        }
+
+        if (node && typeof node === "object") {
+          for (const [key, value] of Object.entries(node)) {
+            visit(value, path.concat(key));
+          }
+        }
+      }
+
+      visit(json, []);
+      return datasets;
+    }
+
+    function isAppleHealthExporterPayload(json) {
+      return Boolean(
+        json &&
+        typeof json === "object" &&
+        json.exportInfo &&
+        Array.isArray(json.exportInfo.dataTypes)
+      );
+    }
+
+    function parseAppleHealthExporterDatasets(json) {
+      const pool = getColorPool();
+      const dataTypes = json.exportInfo.dataTypes || [];
+      const sortedTypes = dataTypes
+        .filter((key) => Array.isArray(json[key]))
+        .sort((left, right) => {
+          const leftInfo = HEALTH_EXPORTER_NAMES[left]?.label || left;
+          const rightInfo = HEALTH_EXPORTER_NAMES[right]?.label || right;
+          return leftInfo.localeCompare(rightInfo);
+        });
+
+      return sortedTypes
+        .map((key, index) => {
+          const items = json[key];
+          if (!Array.isArray(items)) return null;
+          const points = items
+            .map((item) => {
+              const x = toTimestamp(item.date);
+              const value = toNumber(item.value);
+              if (!Number.isFinite(x) || !Number.isFinite(value)) return null;
+              return {
+                x,
+                rawDate: item.date,
+                values: { value },
+                raw: item
+              };
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.x - b.x);
+
+          const metadata = HEALTH_EXPORTER_NAMES[key] || { label: humanizeKey(key), unitLabel: items[0]?.unit || "", kind: "other" };
+          const unit = items.find((item) => item && typeof item.unit === "string")?.unit || metadata.unitLabel || "";
+
+          return {
+            id: key,
+            key,
+            label: metadata.label,
+            sourceLabel: key,
+            dateField: "date",
+            unit,
+            kind: metadata.kind,
+            isAppleHealth: true,
+            series: [{
+              key: "value",
+              label: metadata.label,
+              shortLabel: "value",
+              color: pool[index % pool.length],
+              lineWidth: 1,
+              customColor: false
+            }],
+            points
+          };
+        })
+        .filter((dataset) => dataset && dataset.points.length);
+    }
+
+    function makeDatasetFromArray(items, label) {
+      if (!items.length || !items.every((item) => item && typeof item === "object" && !Array.isArray(item))) {
+        return null;
+      }
+
+      const fields = new Set();
+      items.forEach((item) => Object.keys(item).forEach((key) => fields.add(key)));
+      const keys = [...fields];
+      const dateField = keys.find((key) => items.some((item) => isValidDate(item[key])));
+      if (!dateField) return null;
+
+      const numericFields = keys.filter((key) => key !== dateField && items.some((item) => Number.isFinite(toNumber(item[key]))));
+      if (!numericFields.length) return null;
+
+      const series = numericFields.map((field, index) => ({
+        key: field,
+        label: field,
+        color: getColorPool()[index % getColorPool().length],
+        lineWidth: 1,
+        customColor: false
+      }));
+
+      const points = items
+        .map((item) => {
+          const x = toTimestamp(item[dateField]);
+          if (!Number.isFinite(x)) return null;
+          const values = {};
+          for (const seriesDef of series) {
+            const value = toNumber(item[seriesDef.key]);
+            values[seriesDef.key] = Number.isFinite(value) ? value : null;
+          }
+          return {
+            x,
+            rawDate: item[dateField],
+            values,
+            raw: item
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.x - b.x);
+
+      if (!points.length) return null;
+
+      return {
+        id: label,
+        key: label,
+        label,
+        sourceLabel: label,
+        dateField,
+        unit: "",
+        kind: "generic",
+        isAppleHealth: false,
+        series,
+        points
+      };
+    }
+
+    function parseCsvDatasets(text, label) {
+      const rows = csvToRows(text);
+      if (!rows.length) return [];
+      const headers = rows[0];
+      const dataRows = rows.slice(1).filter((row) => row.some((cell) => cell !== ""));
+      const dateField = headers.find((header, index) => dataRows.some((row) => isValidDate(row[index])));
+      if (!dateField) return [];
+      const dateIndex = headers.indexOf(dateField);
+
+      const numericFields = headers.filter((header, index) => index !== dateIndex && dataRows.some((row) => Number.isFinite(toNumber(row[index]))));
+      if (!numericFields.length) return [];
+
+      const series = numericFields.map((field, index) => ({
+        key: field,
+        label: field,
+        color: getColorPool()[index % getColorPool().length],
+        lineWidth: 1,
+        customColor: false
+      }));
+
+      const points = dataRows
+        .map((row) => {
+          const x = toTimestamp(row[dateIndex]);
+          if (!Number.isFinite(x)) return null;
+          const values = {};
+          headers.forEach((header, index) => {
+            values[header] = Number.isFinite(toNumber(row[index])) ? toNumber(row[index]) : null;
+          });
+          return {
+            x,
+            rawDate: row[dateIndex],
+            values,
+            raw: Object.fromEntries(headers.map((header, index) => [header, row[index]]))
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.x - b.x);
+
+      return [{
+        id: label,
+        key: label,
+        label,
+        sourceLabel: label,
+        dateField,
+        unit: "",
+        kind: "csv",
+        isAppleHealth: false,
+        series,
+        points
+      }];
+    }
+
+    function csvToRows(text) {
+      const rows = [];
+      let row = [];
+      let cell = "";
+      let quote = false;
+
+      for (let index = 0; index < text.length; index += 1) {
+        const char = text[index];
+        const next = text[index + 1];
+
+        if (char === "\"") {
+          if (quote && next === "\"") {
+            cell += "\"";
+            index += 1;
+          } else {
+            quote = !quote;
+          }
+        } else if (char === "," && !quote) {
+          row.push(cell);
+          cell = "";
+        } else if ((char === "\n" || char === "\r") && !quote) {
+          if (char === "\r" && next === "\n") index += 1;
+          row.push(cell);
+          rows.push(row);
+          row = [];
+          cell = "";
+        } else {
+          cell += char;
+        }
+      }
+
+      if (cell.length || row.length) {
+        row.push(cell);
+        rows.push(row);
+      }
+
+      return rows;
+    }
+
+    function isValidDate(value) {
+      if (typeof value !== "string" && typeof value !== "number") return false;
+      return Number.isFinite(toTimestamp(value));
+    }
+
+    function toTimestamp(value) {
+      if (typeof value === "number") return value;
+      const timestamp = Date.parse(value);
+      return Number.isFinite(timestamp) ? timestamp : NaN;
+    }
+
+    function toNumber(value) {
+      if (typeof value === "number") return value;
+      if (typeof value !== "string") return NaN;
+      if (!value.trim()) return NaN;
+      const normalized = value.replace(/\s/g, "").replace(",", ".");
+      return Number.parseFloat(normalized);
+    }
+
+    function getActiveDataset() {
+      return state.datasets.find((dataset) => dataset.id === state.activeDatasetId) || null;
+    }
+
+    function autoSelectFirstSeries() {
+      const dataset = getActiveDataset();
+      state.selectedSeries.clear();
+      if (!dataset) return;
+      dataset.series.slice(0, Math.min(2, dataset.series.length)).forEach((series) => state.selectedSeries.add(series.key));
+    }
+
+    function renderAll() {
+      renderDatasetSelect();
+      renderDatasetMeta();
+      renderSeriesList();
+      renderMarkers();
+      renderStats();
+      updateSummaryChip();
+      drawChart();
+    }
+
+    function renderDatasetSelect() {
+      const dataset = getActiveDataset();
+      elements.datasetSelect.innerHTML = "";
+
+      if (!state.datasets.length) {
+        const option = document.createElement("option");
+        option.textContent = "Load a file first";
+        option.value = "";
+        elements.datasetSelect.append(option);
+        elements.datasetSelect.disabled = true;
+        return;
+      }
+
+      elements.datasetSelect.disabled = false;
+      state.datasets.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = `${item.label}${item.unit ? ` (${item.unit})` : ""} • ${item.points.length} points`;
+        option.selected = item.id === dataset?.id;
+        elements.datasetSelect.append(option);
+      });
+    }
+
+    function renderSeriesList() {
+      const dataset = getActiveDataset();
+      elements.seriesList.innerHTML = "";
+
+      if (!dataset) {
+        const note = document.createElement("div");
+        note.className = "hint";
+        note.textContent = "No matching series yet.";
+        elements.seriesList.append(note);
+        return;
+      }
+
+      dataset.series.forEach((series) => {
+        const item = document.createElement("div");
+        item.className = "series-item";
+
+        const checked = state.selectedSeries.has(series.key);
+        const latestValue = getLatestValue(dataset, series.key);
+
+        item.innerHTML = `
+          <div class="series-top">
+            <span class="chip"><span class="color-dot" style="background:${series.color}"></span>${escapeHtml(series.shortLabel || series.label)}</span>
+            <input type="checkbox" ${checked ? "checked" : ""} data-series-key="${escapeHtml(series.key)}">
+          </div>
+          <div class="series-controls">
+            <div class="hint">Latest value: ${latestValue ?? "no data"}${dataset.unit ? ` ${escapeHtml(dataset.unit)}` : ""}</div>
+            <div class="series-grid">
+              <div class="palette-block">
+                <div class="series-control-row">
+                  <span class="hint">Color</span>
+                  ${dataset.unit ? `<span class="unit-badge">${escapeHtml(dataset.unit)}</span>` : ""}
+                </div>
+                <div class="palette" data-palette-series="${escapeHtml(series.key)}"></div>
+              </div>
+              <label class="series-width">
+                <div class="series-width-row">
+                  <span class="hint">Line width</span>
+                  <span class="hint">${escapeHtml(round(series.lineWidth || 1))} px</span>
+                </div>
+                <input type="range" min="0.5" max="4" step="0.5" value="${escapeHtml(series.lineWidth || 1)}" data-width-series="${escapeHtml(series.key)}">
+              </label>
+            </div>
+          </div>
+        `;
+
+        const checkbox = item.querySelector("input");
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) {
+            state.selectedSeries.add(series.key);
+          } else {
+            state.selectedSeries.delete(series.key);
+          }
+          fitToVisibleSeries();
+          renderAll();
+        });
+
+        renderPaletteInto(item.querySelector(`[data-palette-series="${CSS.escape(series.key)}"]`), series.color, (color) => {
+          series.color = color;
+          series.customColor = true;
+          renderAll();
+        });
+
+        item.querySelector(`[data-width-series="${CSS.escape(series.key)}"]`).addEventListener("input", (event) => {
+          series.lineWidth = Number(event.target.value);
+          renderAll();
+        });
+
+        elements.seriesList.append(item);
+      });
+    }
+
+    function renderDatasetMeta() {
+      const dataset = getActiveDataset();
+      elements.datasetMeta.innerHTML = "";
+
+      if (!dataset) {
+        elements.datasetMeta.innerHTML = `
+          <div class="hint">Load a file to inspect datasets and series metadata.</div>
+        `;
+        return;
+      }
+
+      if (dataset.isAppleHealth) {
+        const first = dataset.points[0]?.x;
+        const last = dataset.points[dataset.points.length - 1]?.x;
+        elements.datasetMeta.innerHTML = `
+          <div><strong>${escapeHtml(dataset.label)}</strong>${dataset.unit ? ` <span class="unit-badge">${escapeHtml(dataset.unit)}</span>` : ""}</div>
+          <div class="hint">${escapeHtml(dataset.kind)} metric • ${dataset.points.length} samples</div>
+          <div class="hint">${first ? escapeHtml(formatDateShort(first)) : "n/a"} - ${last ? escapeHtml(formatDateShort(last)) : "n/a"}</div>
+        `;
+        return;
+      }
+
+      elements.datasetMeta.innerHTML = `
+        <div><strong>${escapeHtml(dataset.label)}</strong></div>
+        <div class="hint">Date field: ${escapeHtml(dataset.dateField)} • ${dataset.series.length} series</div>
+        <div class="hint">${dataset.points.length} points</div>
+      `;
+    }
+
+    function getLatestValue(dataset, key) {
+      for (let index = dataset.points.length - 1; index >= 0; index -= 1) {
+        const value = dataset.points[index].values[key];
+        if (Number.isFinite(value)) return round(value);
+      }
+      return null;
+    }
+
+    function renderMarkers() {
+      elements.markerList.innerHTML = "";
+
+      if (!state.markers.length) {
+        const note = document.createElement("div");
+        note.className = "hint";
+        note.textContent = "No markers yet.";
+        elements.markerList.append(note);
+        return;
+      }
+
+      state.markers
+        .slice()
+        .sort((a, b) => a.x - b.x)
+        .forEach((marker) => {
+          const item = document.createElement("div");
+          item.className = "marker-item";
+          item.innerHTML = `
+            <div class="marker-top">
+              <span class="chip"><span class="color-dot" style="background:${marker.color}"></span>${escapeHtml(marker.label || "Untitled")}</span>
+              <button type="button" class="danger">Delete</button>
+            </div>
+            <div class="hint">${formatDate(marker.x)}</div>
+          `;
+          item.querySelector("button").addEventListener("click", () => {
+            state.markers = state.markers.filter((entry) => entry.id !== marker.id);
+            renderMarkers();
+            drawChart();
+          });
+          elements.markerList.append(item);
+        });
+    }
+
+    function renderStats() {
+      const dataset = getActiveDataset();
+      const processed = getProcessedSeries();
+      elements.stats.innerHTML = "";
+
+      if (!dataset || !processed.length) return;
+
+      const pointCount = dataset.points.length;
+      const visibleRange = state.chart.viewMinX && state.chart.viewMaxX
+        ? `${formatDateShort(state.chart.viewMinX)} - ${formatDateShort(state.chart.viewMaxX)}`
+        : "full range";
+      const sourceValue = dataset.isAppleHealth ? dataset.label : shortFileLabel(state.sourceName || dataset.label);
+
+      const cards = [
+        { label: "Dataset", value: sourceValue, compact: true },
+        { label: "Unit", value: dataset.unit || "n/a" },
+        { label: "Points", value: String(pointCount) },
+        { label: "Range", value: visibleRange }
+      ];
+
+      cards.forEach((card) => {
+        const node = document.createElement("div");
+        node.className = `stat-card${card.compact ? " compact" : ""}`;
+        node.innerHTML = `<div class="hint">${escapeHtml(card.label)}</div><strong>${escapeHtml(card.value)}</strong>`;
+        elements.stats.append(node);
+      });
+    }
+
+    function updateSummaryChip() {
+      const dataset = getActiveDataset();
+      const selectedCount = state.selectedSeries.size;
+      if (!dataset) {
+        elements.summaryChip.textContent = "No data";
+        return;
+      }
+      elements.summaryChip.textContent = `${dataset.label}${dataset.unit ? ` (${dataset.unit})` : ""} • ${selectedCount} selected • ${dataset.points.length} points`;
+    }
+
+    function addMarker() {
+      const date = elements.markerDate.value;
+      if (!date) return;
+      state.markers.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        x: toTimestamp(date),
+        label: elements.markerLabel.value.trim(),
+        color: state.markerDraftColor
+      });
+      elements.markerLabel.value = "";
+      renderMarkers();
+      drawChart();
+    }
+
+    function getProcessedSeries() {
+      const dataset = getActiveDataset();
+      if (!dataset) return [];
+
+      return dataset.series
+        .filter((series) => state.selectedSeries.has(series.key))
+        .map((series) => {
+          const source = dataset.points
+            .map((point) => ({ x: point.x, y: point.values[series.key], raw: point }))
+            .filter((point) => Number.isFinite(point.y));
+          const points = smoothPoints(source, state.smoothingWindow, state.smoothingMode);
+          return { ...series, points };
+        })
+        .filter((series) => series.points.length);
+    }
+
+    function smoothPoints(points, windowSize, mode) {
+      if (!windowSize) return points;
+      if (mode === "ema") return ema(points, windowSize);
+      return movingAverage(points, windowSize);
+    }
+
+    function movingAverage(points, windowSize) {
+      return points.map((point, index) => {
+        const start = Math.max(0, index - windowSize);
+        const segment = points.slice(start, index + 1);
+        const avg = segment.reduce((sum, entry) => sum + entry.y, 0) / segment.length;
+        return { ...point, y: avg };
+      });
+    }
+
+    function ema(points, windowSize) {
+      const alpha = 2 / (windowSize + 2);
+      let previous = points[0]?.y ?? 0;
+      return points.map((point, index) => {
+        if (index === 0) {
+          previous = point.y;
+          return point;
+        }
+        previous = alpha * point.y + (1 - alpha) * previous;
+        return { ...point, y: previous };
+      });
+    }
+
+    function resetChartView() {
+      const processed = getProcessedSeries();
+      const allPoints = processed.flatMap((series) => series.points);
+      if (!allPoints.length) {
+        state.chart.viewMinX = null;
+        state.chart.viewMaxX = null;
+        state.chart.fullMinX = null;
+        state.chart.fullMaxX = null;
+        return;
+      }
+
+      const minX = Math.min(...allPoints.map((point) => point.x));
+      const maxX = Math.max(...allPoints.map((point) => point.x));
+      state.chart.fullMinX = minX;
+      state.chart.fullMaxX = maxX;
+      state.chart.viewMinX = minX;
+      state.chart.viewMaxX = maxX;
+    }
+
+    function fitToVisibleSeries() {
+      const processed = getProcessedSeries();
+      const allPoints = processed.flatMap((series) => series.points);
+      if (!allPoints.length) return;
+      state.chart.viewMinX = Math.min(...allPoints.map((point) => point.x));
+      state.chart.viewMaxX = Math.max(...allPoints.map((point) => point.x));
+    }
+
+    function drawChart() {
+      const processed = getProcessedSeries();
+      const width = elements.chartCanvas.clientWidth;
+      const height = elements.chartCanvas.clientHeight;
+      ctx.clearRect(0, 0, width, height);
+
+      if (!processed.length) {
+        elements.emptyState.style.display = "grid";
+        hideTooltip();
+        return;
+      }
+
+      elements.emptyState.style.display = "none";
+
+      const padding = { top: 24, right: 30, bottom: 40, left: 60 };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+
+      if (!Number.isFinite(state.chart.viewMinX) || !Number.isFinite(state.chart.viewMaxX)) {
+        resetChartView();
+      }
+
+      const minX = state.chart.viewMinX;
+      const maxX = state.chart.viewMaxX;
+      const visibleSeries = processed.map((series) => ({
+        ...series,
+        visiblePoints: series.points.filter((point) => point.x >= minX && point.x <= maxX)
+      }));
+      const yValues = visibleSeries.flatMap((series) => series.visiblePoints.map((point) => point.y));
+      if (!yValues.length) {
+        elements.emptyState.style.display = "grid";
+        return;
+      }
+
+      let minY = Math.min(...yValues);
+      let maxY = Math.max(...yValues);
+      if (minY === maxY) {
+        minY -= 1;
+        maxY += 1;
+      }
+      const padY = (maxY - minY) * 0.08;
+      minY -= padY;
+      maxY += padY;
+
+      const scaleX = (x) => padding.left + ((x - minX) / (maxX - minX || 1)) * plotWidth;
+      const scaleY = (y) => padding.top + plotHeight - ((y - minY) / (maxY - minY || 1)) * plotHeight;
+
+      drawGrid({ padding, plotWidth, plotHeight, minX, maxX, minY, maxY, scaleX, scaleY });
+      drawMarkers({ padding, plotHeight, minX, maxX, scaleX });
+
+      visibleSeries.forEach((series) => {
+        if (!series.visiblePoints.length) return;
+        ctx.strokeStyle = series.color;
+        ctx.lineWidth = series.lineWidth || 1;
+        ctx.beginPath();
+        series.visiblePoints.forEach((point, index) => {
+          const x = scaleX(point.x);
+          const y = scaleY(point.y);
+          if (index === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        if (shouldDrawPoints(series.visiblePoints.length)) {
+          ctx.fillStyle = series.color;
+          const pointRadius = Math.max(2, (series.lineWidth || 1) + 0.75);
+          series.visiblePoints.forEach((point) => {
+            ctx.beginPath();
+            ctx.arc(scaleX(point.x), scaleY(point.y), pointRadius, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+      });
+
+      if (state.chart.hover) {
+        drawHover({ visibleSeries, scaleX, scaleY, padding, plotHeight, minX, maxX });
+      }
+    }
+
+    function drawGrid({ padding, plotWidth, plotHeight, minX, maxX, minY, maxY, scaleX, scaleY }) {
+      ctx.save();
+      ctx.strokeStyle = getCssVariable("--line");
+      ctx.lineWidth = 1;
+      ctx.fillStyle = getCssVariable("--muted");
+      ctx.font = '12px "IBM Plex Sans", sans-serif';
+
+      const yTicks = 5;
+      for (let index = 0; index <= yTicks; index += 1) {
+        const ratio = index / yTicks;
+        const y = padding.top + ratio * plotHeight;
+        const value = maxY - ratio * (maxY - minY);
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(padding.left + plotWidth, y);
+        ctx.stroke();
+        ctx.fillText(round(value), 10, y + 4);
+      }
+
+      const xTicks = Math.min(8, Math.max(3, Math.floor(plotWidth / 120)));
+      for (let index = 0; index <= xTicks; index += 1) {
+        const ratio = index / xTicks;
+        const x = padding.left + ratio * plotWidth;
+        const value = minX + ratio * (maxX - minX);
+        ctx.beginPath();
+        ctx.moveTo(x, padding.top);
+        ctx.lineTo(x, padding.top + plotHeight);
+        ctx.stroke();
+        ctx.fillText(formatDateShort(value), x - 24, padding.top + plotHeight + 24);
+      }
+
+      ctx.strokeStyle = getCssVariable("--line-strong");
+      ctx.beginPath();
+      ctx.moveTo(padding.left, padding.top);
+      ctx.lineTo(padding.left, padding.top + plotHeight);
+      ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawMarkers({ padding, plotHeight, minX, maxX, scaleX }) {
+      state.markers.forEach((marker) => {
+        if (marker.x < minX || marker.x > maxX) return;
+        const x = scaleX(marker.x);
+        ctx.save();
+        ctx.strokeStyle = marker.color;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(x, padding.top);
+        ctx.lineTo(x, padding.top + plotHeight);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = marker.color;
+        ctx.font = '12px "IBM Plex Sans", sans-serif';
+        ctx.fillText(marker.label || formatDateShort(marker.x), x + 6, padding.top + 16);
+        ctx.restore();
+      });
+    }
+
+    function drawHover({ visibleSeries, scaleX, scaleY, padding, plotHeight, minX, maxX }) {
+      const hoverXValue = minX + ((state.chart.hover.x - padding.left) / (elements.chartCanvas.clientWidth - padding.left - 30)) * (maxX - minX);
+      let nearest = null;
+
+      visibleSeries.forEach((series) => {
+        series.visiblePoints.forEach((point) => {
+          const dx = Math.abs(point.x - hoverXValue);
+          if (!nearest || dx < nearest.dx) {
+            nearest = { point, series, dx };
+          }
+        });
+      });
+
+      if (!nearest) {
+        hideTooltip();
+        return;
+      }
+
+      const x = scaleX(nearest.point.x);
+      const y = scaleY(nearest.point.y);
+
+      ctx.save();
+      ctx.strokeStyle = getCssVariable("--line-strong");
+      ctx.beginPath();
+      ctx.moveTo(x, padding.top);
+      ctx.lineTo(x, padding.top + plotHeight);
+      ctx.stroke();
+
+      ctx.fillStyle = nearest.series.color;
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      showTooltip(nearest, x, y);
+    }
+
+    function shouldDrawPoints(count) {
+      if (state.pointMode === "always") return true;
+      if (state.pointMode === "never") return false;
+      return count <= 180;
+    }
+
+    function handleWheel(event) {
+      const processed = getProcessedSeries();
+      if (!processed.length) return;
+      event.preventDefault();
+
+      const bounds = elements.chartCanvas.getBoundingClientRect();
+      const paddingLeft = 60;
+      const paddingRight = 30;
+      const plotWidth = bounds.width - paddingLeft - paddingRight;
+      if (event.offsetX < paddingLeft || event.offsetX > bounds.width - paddingRight) return;
+
+      const currentMin = state.chart.viewMinX;
+      const currentMax = state.chart.viewMaxX;
+      const span = currentMax - currentMin;
+      const ratio = (event.offsetX - paddingLeft) / plotWidth;
+      const anchor = currentMin + ratio * span;
+      const zoomFactor = Math.exp(clamp(event.deltaY, -40, 40) * 0.0025);
+      const nextSpan = clamp(span * zoomFactor, 24 * 60 * 60 * 1000, state.chart.fullMaxX - state.chart.fullMinX || span);
+
+      let nextMin = anchor - ratio * nextSpan;
+      let nextMax = nextMin + nextSpan;
+
+      if (nextMin < state.chart.fullMinX) {
+        nextMin = state.chart.fullMinX;
+        nextMax = nextMin + nextSpan;
+      }
+      if (nextMax > state.chart.fullMaxX) {
+        nextMax = state.chart.fullMaxX;
+        nextMin = nextMax - nextSpan;
+      }
+
+      state.chart.viewMinX = nextMin;
+      state.chart.viewMaxX = nextMax;
+      drawChart();
+    }
+
+    function handleGestureStart(event) {
+      event.preventDefault();
+      state.chart.gestureScale = event.scale || 1;
+    }
+
+    function handleGestureChange(event) {
+      event.preventDefault();
+      if (!getProcessedSeries().length) return;
+      const previousScale = state.chart.gestureScale || 1;
+      const deltaScale = previousScale / (event.scale || 1);
+      state.chart.gestureScale = event.scale || 1;
+      const bounds = elements.chartCanvas.getBoundingClientRect();
+      zoomAtPosition(bounds.width / 2, deltaScale);
+    }
+
+    function handleGestureEnd(event) {
+      event.preventDefault();
+      state.chart.gestureScale = null;
+    }
+
+    function handlePointerDown(event) {
+      if (!getProcessedSeries().length) return;
+      state.chart.dragStart = {
+        x: event.clientX,
+        minX: state.chart.viewMinX,
+        maxX: state.chart.viewMaxX
+      };
+      elements.chartCanvas.classList.add("dragging");
+    }
+
+    function handlePointerMove(event) {
+      const bounds = elements.chartCanvas.getBoundingClientRect();
+      state.chart.hover = {
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top
+      };
+
+      if (state.chart.dragStart) {
+        const plotWidth = bounds.width - 60 - 30;
+        const dx = event.clientX - state.chart.dragStart.x;
+        const span = state.chart.dragStart.maxX - state.chart.dragStart.minX;
+        const delta = (dx / plotWidth) * span;
+        let nextMin = state.chart.dragStart.minX - delta;
+        let nextMax = state.chart.dragStart.maxX - delta;
+        const fullSpan = state.chart.fullMaxX - state.chart.fullMinX;
+        const currentSpan = nextMax - nextMin;
+
+        if (currentSpan >= fullSpan) {
+          nextMin = state.chart.fullMinX;
+          nextMax = state.chart.fullMaxX;
+        } else {
+          if (nextMin < state.chart.fullMinX) {
+            nextMin = state.chart.fullMinX;
+            nextMax = nextMin + currentSpan;
+          }
+          if (nextMax > state.chart.fullMaxX) {
+            nextMax = state.chart.fullMaxX;
+            nextMin = nextMax - currentSpan;
+          }
+        }
+
+        state.chart.viewMinX = nextMin;
+        state.chart.viewMaxX = nextMax;
+      }
+
+      drawChart();
+    }
+
+    function handlePointerUp() {
+      state.chart.dragStart = null;
+      elements.chartCanvas.classList.remove("dragging");
+    }
+
+    function handlePointerLeave() {
+      state.chart.hover = null;
+      if (!state.chart.dragStart) {
+        hideTooltip();
+      }
+      drawChart();
+    }
+
+    function showTooltip(nearest, x, y) {
+      elements.tooltip.classList.add("visible");
+      elements.tooltip.style.transform = `translate(${Math.min(x + 14, elements.chartCanvas.clientWidth - 200)}px, ${Math.max(16, y - 18)}px)`;
+      elements.tooltip.innerHTML = `
+        <div><strong>${escapeHtml(nearest.series.label)}</strong></div>
+        <div>${formatDate(nearest.point.x)}</div>
+        <div>Value: ${round(nearest.point.y)}${getActiveDataset()?.unit ? ` ${escapeHtml(getActiveDataset().unit)}` : ""}</div>
+      `;
+    }
+
+    function hideTooltip() {
+      elements.tooltip.classList.remove("visible");
+      elements.tooltip.style.transform = "translateY(8px)";
+    }
+
+    function formatDate(value) {
+      return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(value);
+    }
+
+    function formatDateShort(value) {
+      return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" }).format(value);
+    }
+
+    function round(value) {
+      return Number(value).toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function zoomAtPosition(offsetX, zoomFactor) {
+      const bounds = elements.chartCanvas.getBoundingClientRect();
+      const paddingLeft = 60;
+      const paddingRight = 30;
+      const plotWidth = bounds.width - paddingLeft - paddingRight;
+      const ratio = clamp((offsetX - paddingLeft) / plotWidth, 0, 1);
+      const currentMin = state.chart.viewMinX;
+      const currentMax = state.chart.viewMaxX;
+      const span = currentMax - currentMin;
+      const anchor = currentMin + ratio * span;
+      const nextSpan = clamp(span * zoomFactor, 24 * 60 * 60 * 1000, state.chart.fullMaxX - state.chart.fullMinX || span);
+
+      let nextMin = anchor - ratio * nextSpan;
+      let nextMax = nextMin + nextSpan;
+
+      if (nextMin < state.chart.fullMinX) {
+        nextMin = state.chart.fullMinX;
+        nextMax = nextMin + nextSpan;
+      }
+      if (nextMax > state.chart.fullMaxX) {
+        nextMax = state.chart.fullMaxX;
+        nextMin = nextMax - nextSpan;
+      }
+
+      state.chart.viewMinX = nextMin;
+      state.chart.viewMaxX = nextMax;
+      drawChart();
+    }
+
+    function getColorPool() {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? palettes.dark : palettes.light;
+    }
+
+    function getCssVariable(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function renderMarkerPalette() {
+      renderPaletteInto(elements.markerPalette, state.markerDraftColor, (color) => {
+        state.markerDraftColor = color;
+        renderMarkerPalette();
+      });
+    }
+
+    function renderPaletteInto(container, selectedColor, onSelect) {
+      if (!container) return;
+      const fragment = document.createDocumentFragment();
+      container.innerHTML = "";
+      getColorPool().forEach((color) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `swatch${selectedColor === color ? " selected" : ""}`;
+        button.innerHTML = `<span style="background:${color}"></span>`;
+        button.title = color;
+        button.addEventListener("click", () => onSelect(color));
+        fragment.append(button);
+      });
+      container.append(fragment);
+    }
+
+    function shortFileLabel(value) {
+      const label = String(value || "");
+      if (label.length <= 28) return label;
+      return `${label.slice(0, 14)}...${label.slice(-10)}`;
+    }
+
+    function humanizeKey(value) {
+      return String(value)
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/[_-]+/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    init();
+  </script>
+</body>
+</html>
