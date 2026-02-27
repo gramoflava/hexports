@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Data Analyzer</title>
+  <title>Time Series Explorer</title>
   <style>
     :root {
       color-scheme: light dark;
@@ -85,7 +85,7 @@
     }
 
     .sidebar {
-      padding: 22px;
+      padding: 18px;
       position: sticky;
       top: 20px;
       max-height: calc(100vh - 40px);
@@ -103,17 +103,17 @@
     }
 
     h1 {
-      font-size: 30px;
+      font-size: 22px;
       line-height: 1;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
 
     h2 {
-      font-size: 15px;
+      font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--muted);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     p {
@@ -124,12 +124,12 @@
 
     .stack {
       display: grid;
-      gap: 18px;
-      margin-top: 22px;
+      gap: 14px;
+      margin-top: 16px;
     }
 
     .section {
-      padding-top: 18px;
+      padding-top: 14px;
       border-top: 1px solid var(--line);
     }
 
@@ -143,6 +143,11 @@
       border-radius: 18px;
       padding: 18px;
       background: color-mix(in srgb, var(--accent) 6%, transparent);
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .dropzone.over {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
     }
 
     input[type="file"],
@@ -163,6 +168,15 @@
     input[type="range"] {
       width: 100%;
       accent-color: var(--accent);
+    }
+
+    .smooth-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--muted);
+      padding: 0 2px;
+      margin-top: 1px;
     }
 
     button {
@@ -194,12 +208,30 @@
 
     .dataset-meta {
       display: grid;
-      gap: 4px;
+      gap: 6px;
       margin-top: 8px;
       padding: 10px 12px;
       border: 1px solid var(--line);
       border-radius: 14px;
       background: color-mix(in srgb, var(--panel-strong) 86%, transparent);
+    }
+
+    .meta-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .meta-kv {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1px 10px;
+      font-size: 12px;
+    }
+
+    .meta-kv .hint {
+      line-height: 1.7;
     }
 
     .series-list,
@@ -324,7 +356,8 @@
     }
 
     .empty {
-      min-height: clamp(320px, 54vh, 560px);
+      position: absolute;
+      inset: 0;
       display: grid;
       place-items: center;
       text-align: center;
@@ -332,33 +365,6 @@
       padding: 32px;
     }
 
-    .stats {
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      margin-top: 16px;
-    }
-
-    .stat-card strong {
-      display: block;
-      font-size: clamp(22px, 2vw, 28px);
-      color: var(--text);
-      font-family: "Space Grotesk", sans-serif;
-      line-height: 1.05;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-
-    .stat-card {
-      min-width: 0;
-    }
-
-    .stat-card .hint {
-      margin-bottom: 8px;
-    }
-
-    .stat-card.compact strong {
-      font-size: clamp(16px, 1.4vw, 20px);
-      line-height: 1.2;
-    }
 
     .inline {
       display: flex;
@@ -486,6 +492,100 @@
       color: var(--muted);
     }
 
+    .agg-section {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .agg-section.visible {
+      display: block;
+    }
+
+    .agg-header {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    .agg-toggle {
+      display: flex;
+      background: var(--button-secondary-bg);
+      border-radius: 999px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .agg-btn {
+      background: transparent;
+      color: var(--muted);
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+    }
+
+    .agg-btn.active {
+      background: var(--panel-strong);
+      color: var(--text);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    }
+
+    .agg-wrap {
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      max-height: 340px;
+      overflow-y: auto;
+    }
+
+    .agg-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .agg-wrap thead th {
+      text-align: right;
+      padding: 8px 14px;
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      white-space: nowrap;
+    }
+
+    .agg-wrap thead th:first-child {
+      text-align: left;
+    }
+
+    .agg-wrap td {
+      padding: 6px 14px;
+      border-bottom: 1px solid var(--line);
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .agg-wrap tr:last-child td {
+      border-bottom: none;
+    }
+
+    .agg-wrap tr:hover td {
+      background: color-mix(in srgb, var(--accent) 5%, transparent);
+    }
+
+    .agg-wrap td:first-child {
+      text-align: left;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
     @media (max-width: 1080px) {
       .shell {
         grid-template-columns: 1fr;
@@ -515,13 +615,13 @@
 <body>
   <div class="shell">
     <aside class="panel sidebar">
-      <h1>Data Analyzer</h1>
-      <p>Load an export, choose series, and explore the chart locally.</p>
+      <h1>Time Series Explorer</h1>
+      <p>Load a JSON or CSV export and explore your data locally.</p>
 
       <div class="stack">
         <section class="section">
           <h2>File</h2>
-          <div class="dropzone">
+          <div class="dropzone" id="dropzone">
             <label>
               <span>JSON or CSV</span>
               <input id="fileInput" type="file" accept=".json,.csv,application/json,text/csv">
@@ -543,14 +643,17 @@
         <section class="section">
           <h2>Processing</h2>
           <label>
-            <span>Smoothing: <strong id="smoothingLabel">0</strong></span>
-            <input id="smoothingRange" type="range" min="0" max="30" value="0">
+            <span>Smoothing: <strong id="smoothingLabel">None</strong></span>
+            <input id="smoothingRange" type="range" min="0" max="6" step="1" value="0">
+            <div class="smooth-ticks">
+              <span>None</span><span>1d</span><span>1w</span><span>1mo</span><span>3mo</span><span>6mo</span><span>1y</span>
+            </div>
           </label>
           <label>
             <span>Smoothing mode</span>
             <select id="smoothingMode">
               <option value="movingAverage">Moving average</option>
-              <option value="ema">EMA</option>
+              <option value="ema" selected>Exponential (EMA)</option>
             </select>
           </label>
           <label>
@@ -613,7 +716,15 @@
             </div>
           </div>
         </div>
-        <div class="stats" id="stats"></div>
+        <div class="agg-section" id="aggSection">
+          <div class="agg-header">
+            <div class="agg-toggle">
+              <button type="button" class="agg-btn active" id="aggMonthBtn">Monthly</button>
+              <button type="button" class="agg-btn" id="aggYearBtn">Yearly</button>
+            </div>
+          </div>
+          <div class="agg-wrap" id="aggTable"></div>
+        </div>
       </div>
     </main>
   </div>
@@ -645,16 +756,20 @@
       dark: ["#60a5fa", "#22d3ee", "#2dd4bf", "#4ade80", "#a3e635", "#facc15", "#fb923c", "#f87171", "#f472b6", "#c084fc", "#a78bfa", "#818cf8", "#38bdf8", "#94a3b8", "#e5e7eb", "#fdba74"]
     };
 
+    const SMOOTH_LEVELS = [0, 1, 7, 30, 90, 182, 365];
+    const SMOOTH_LABELS = ["None", "1d", "1w", "1mo", "3mo", "6mo", "1y"];
+
     const state = {
       sourceName: "",
       datasets: [],
       activeDatasetId: "",
       selectedSeries: new Set(),
       smoothingWindow: 0,
-      smoothingMode: "movingAverage",
+      smoothingMode: "ema",
       pointMode: "auto",
       markers: [],
       markerDraftColor: "",
+      aggregationPeriod: "month",
       chart: {
         viewMinX: null,
         viewMaxX: null,
@@ -667,6 +782,7 @@
     };
 
     const elements = {
+      dropzone: document.getElementById("dropzone"),
       fileInput: document.getElementById("fileInput"),
       fileStatus: document.getElementById("fileStatus"),
       datasetSelect: document.getElementById("datasetSelect"),
@@ -684,11 +800,14 @@
       resetViewButton: document.getElementById("resetViewButton"),
       fitSelectionButton: document.getElementById("fitSelectionButton"),
       summaryChip: document.getElementById("summaryChip"),
-      stats: document.getElementById("stats"),
       canvasWrap: document.getElementById("canvasWrap"),
       emptyState: document.getElementById("emptyState"),
       chartCanvas: document.getElementById("chartCanvas"),
-      tooltip: document.getElementById("tooltip")
+      tooltip: document.getElementById("tooltip"),
+      aggSection: document.getElementById("aggSection"),
+      aggTable: document.getElementById("aggTable"),
+      aggMonthBtn: document.getElementById("aggMonthBtn"),
+      aggYearBtn: document.getElementById("aggYearBtn")
     };
 
     const ctx = elements.chartCanvas.getContext("2d");
@@ -696,6 +815,8 @@
     function init() {
       state.markerDraftColor = getColorPool()[0];
       renderMarkerPalette();
+      const d = new Date();
+      elements.markerDate.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       bindEvents();
       resizeCanvas();
       renderAll();
@@ -716,6 +837,21 @@
         loadSource(file.name, text);
       });
 
+      const dz = elements.dropzone;
+      dz.addEventListener("dragenter", (e) => { e.preventDefault(); dz.classList.add("over"); });
+      dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("over"); });
+      dz.addEventListener("dragleave", (e) => { if (!dz.contains(e.relatedTarget)) dz.classList.remove("over"); });
+      dz.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        dz.classList.remove("over");
+        const [file] = e.dataTransfer.files;
+        if (!file) return;
+        state.sourceName = file.name;
+        elements.fileStatus.textContent = `Loaded: ${file.name}`;
+        const text = await file.text();
+        loadSource(file.name, text);
+      });
+
       elements.datasetSelect.addEventListener("change", () => {
         state.activeDatasetId = elements.datasetSelect.value;
         autoSelectFirstSeries();
@@ -724,9 +860,10 @@
       });
 
       elements.smoothingRange.addEventListener("input", () => {
-        state.smoothingWindow = Number(elements.smoothingRange.value);
-        elements.smoothingLabel.textContent = String(state.smoothingWindow);
-        renderAll();
+        const idx = Number(elements.smoothingRange.value);
+        state.smoothingWindow = SMOOTH_LEVELS[idx];
+        elements.smoothingLabel.textContent = SMOOTH_LABELS[idx];
+        drawChart();
       });
 
       elements.smoothingMode.addEventListener("change", () => {
@@ -740,6 +877,19 @@
       });
 
       elements.addMarkerButton.addEventListener("click", addMarker);
+
+      elements.aggMonthBtn.addEventListener("click", () => {
+        state.aggregationPeriod = "month";
+        elements.aggMonthBtn.classList.add("active");
+        elements.aggYearBtn.classList.remove("active");
+        renderAggregationTable();
+      });
+      elements.aggYearBtn.addEventListener("click", () => {
+        state.aggregationPeriod = "year";
+        elements.aggYearBtn.classList.add("active");
+        elements.aggMonthBtn.classList.remove("active");
+        renderAggregationTable();
+      });
       elements.resetViewButton.addEventListener("click", () => {
         resetChartView();
         drawChart();
@@ -1095,7 +1245,7 @@
       renderDatasetMeta();
       renderSeriesList();
       renderMarkers();
-      renderStats();
+      renderAggregationTable();
       updateSummaryChip();
       drawChart();
     }
@@ -1162,7 +1312,7 @@
                   <span class="hint">Line width</span>
                   <span class="hint">${escapeHtml(round(series.lineWidth || 1))} px</span>
                 </div>
-                <input type="range" min="0.5" max="4" step="0.5" value="${escapeHtml(series.lineWidth || 1)}" data-width-series="${escapeHtml(series.key)}">
+                <input type="range" min="0.1" max="2" step="0.1" value="${escapeHtml(series.lineWidth || 1)}" data-width-series="${escapeHtml(series.key)}">
               </label>
             </div>
           </div>
@@ -1185,8 +1335,14 @@
           renderAll();
         });
 
-        item.querySelector(`[data-width-series="${CSS.escape(series.key)}"]`).addEventListener("input", (event) => {
+        const widthSlider = item.querySelector(`[data-width-series="${CSS.escape(series.key)}"]`);
+        const widthLabel = item.querySelector(".series-width-row").lastElementChild;
+        widthSlider.addEventListener("input", (event) => {
           series.lineWidth = Number(event.target.value);
+          widthLabel.textContent = `${round(series.lineWidth)} px`;
+          drawChart();
+        });
+        widthSlider.addEventListener("change", () => {
           renderAll();
         });
 
@@ -1199,9 +1355,7 @@
       elements.datasetMeta.innerHTML = "";
 
       if (!dataset) {
-        elements.datasetMeta.innerHTML = `
-          <div class="hint">Load a file to inspect datasets and series metadata.</div>
-        `;
+        elements.datasetMeta.innerHTML = `<div class="hint">Load a file to see dataset info.</div>`;
         return;
       }
 
@@ -1209,17 +1363,30 @@
         const first = dataset.points[0]?.x;
         const last = dataset.points[dataset.points.length - 1]?.x;
         elements.datasetMeta.innerHTML = `
-          <div><strong>${escapeHtml(dataset.label)}</strong>${dataset.unit ? ` <span class="unit-badge">${escapeHtml(dataset.unit)}</span>` : ""}</div>
-          <div class="hint">${escapeHtml(dataset.kind)} metric • ${dataset.points.length} samples</div>
-          <div class="hint">${first ? escapeHtml(formatDateShort(first)) : "n/a"} - ${last ? escapeHtml(formatDateShort(last)) : "n/a"}</div>
+          <div class="meta-name">
+            <strong>${escapeHtml(dataset.label)}</strong>
+            ${dataset.unit ? `<span class="unit-badge">${escapeHtml(dataset.unit)}</span>` : ""}
+          </div>
+          <div class="meta-kv">
+            <span class="hint">Kind</span><span>${escapeHtml(dataset.kind)}</span>
+            <span class="hint">Samples</span><span>${dataset.points.length.toLocaleString()}</span>
+            <span class="hint">From</span><span>${first ? escapeHtml(formatDateShort(first)) : "—"}</span>
+            <span class="hint">To</span><span>${last ? escapeHtml(formatDateShort(last)) : "—"}</span>
+          </div>
         `;
         return;
       }
 
+      const first = dataset.points[0]?.x;
+      const last = dataset.points[dataset.points.length - 1]?.x;
       elements.datasetMeta.innerHTML = `
-        <div><strong>${escapeHtml(dataset.label)}</strong></div>
-        <div class="hint">Date field: ${escapeHtml(dataset.dateField)} • ${dataset.series.length} series</div>
-        <div class="hint">${dataset.points.length} points</div>
+        <div class="meta-name"><strong>${escapeHtml(dataset.label)}</strong></div>
+        <div class="meta-kv">
+          <span class="hint">Series</span><span>${dataset.series.length}</span>
+          <span class="hint">Points</span><span>${dataset.points.length.toLocaleString()}</span>
+          ${first ? `<span class="hint">From</span><span>${escapeHtml(formatDateShort(first))}</span>` : ""}
+          ${last ? `<span class="hint">To</span><span>${escapeHtml(formatDateShort(last))}</span>` : ""}
+        </div>
       `;
     }
 
@@ -1264,32 +1431,123 @@
         });
     }
 
-    function renderStats() {
-      const dataset = getActiveDataset();
-      const processed = getProcessedSeries();
-      elements.stats.innerHTML = "";
 
-      if (!dataset || !processed.length) return;
+    function interpolateAt(sortedPoints, t) {
+      if (!sortedPoints.length) return NaN;
+      if (t <= sortedPoints[0].x) return sortedPoints[0].y;
+      if (t >= sortedPoints[sortedPoints.length - 1].x) return sortedPoints[sortedPoints.length - 1].y;
+      let lo = 0, hi = sortedPoints.length - 1;
+      while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        if (sortedPoints[mid].x <= t) lo = mid; else hi = mid;
+      }
+      const p0 = sortedPoints[lo], p1 = sortedPoints[hi];
+      return p0.y + (p1.y - p0.y) * (t - p0.x) / (p1.x - p0.x);
+    }
 
-      const pointCount = dataset.points.length;
-      const visibleRange = state.chart.viewMinX && state.chart.viewMaxX
-        ? `${formatDateShort(state.chart.viewMinX)} - ${formatDateShort(state.chart.viewMaxX)}`
-        : "full range";
-      const sourceValue = dataset.isAppleHealth ? dataset.label : shortFileLabel(state.sourceName || dataset.label);
-
-      const cards = [
-        { label: "Dataset", value: sourceValue, compact: true },
-        { label: "Unit", value: dataset.unit || "n/a" },
-        { label: "Points", value: String(pointCount) },
-        { label: "Range", value: visibleRange }
-      ];
-
-      cards.forEach((card) => {
-        const node = document.createElement("div");
-        node.className = `stat-card${card.compact ? " compact" : ""}`;
-        node.innerHTML = `<div class="hint">${escapeHtml(card.label)}</div><strong>${escapeHtml(card.value)}</strong>`;
-        elements.stats.append(node);
+    function buildDailySeries(points) {
+      if (!points.length) return [];
+      // Average same-day measurements into one daily anchor point
+      const dayBuckets = new Map();
+      points.forEach((p) => {
+        const d = new Date(p.x);
+        const key = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+        if (!dayBuckets.has(key)) dayBuckets.set(key, []);
+        dayBuckets.get(key).push(p.y);
       });
+      const anchors = [...dayBuckets.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([t, ys]) => ({ x: t + 43200000, y: ys.reduce((a, b) => a + b, 0) / ys.length }));
+      // Interpolate between anchors for every calendar day in range
+      const result = [];
+      for (let t = anchors[0].x - 43200000; t <= anchors[anchors.length - 1].x - 43200000; t += 86400000) {
+        result.push({ t, y: interpolateAt(anchors, t + 43200000) });
+      }
+      return result;
+    }
+
+    function getPeriodKey(t, period) {
+      const d = new Date(t);
+      if (period === "year") return String(d.getUTCFullYear());
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function formatPeriodKey(key, period) {
+      if (period === "year") return key;
+      const [year, month] = key.split("-").map(Number);
+      return new Date(Date.UTC(year, month - 1, 1))
+        .toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+    }
+
+    function computeAggregated(period) {
+      const dataset = getActiveDataset();
+      if (!dataset) return null;
+      const selectedSeriesDefs = dataset.series.filter((s) => state.selectedSeries.has(s.key));
+      if (!selectedSeriesDefs.length) return null;
+
+      const allPeriodKeys = new Set();
+      const seriesData = selectedSeriesDefs.map((series) => {
+        const points = dataset.points
+          .map((p) => ({ x: p.x, y: p.values[series.key] }))
+          .filter((p) => Number.isFinite(p.y))
+          .sort((a, b) => a.x - b.x);
+        const daily = buildDailySeries(points);
+        daily.forEach((d) => allPeriodKeys.add(getPeriodKey(d.t, period)));
+        return { series, daily };
+      });
+
+      const sortedPeriods = [...allPeriodKeys].sort().reverse();
+      const rows = sortedPeriods.map((key) => {
+        const values = {};
+        seriesData.forEach(({ series, daily }) => {
+          const matching = daily.filter((d) => getPeriodKey(d.t, period) === key);
+          values[series.key] = matching.length
+            ? matching.reduce((sum, d) => sum + d.y, 0) / matching.length
+            : null;
+        });
+        return { key, values };
+      });
+
+      return { rows, series: selectedSeriesDefs };
+    }
+
+    function renderAggregationTable() {
+      const result = computeAggregated(state.aggregationPeriod);
+      elements.aggTable.innerHTML = "";
+
+      if (!result || !result.rows.length) {
+        elements.aggSection.classList.remove("visible");
+        return;
+      }
+
+      elements.aggSection.classList.add("visible");
+
+      const dataset = getActiveDataset();
+      const unit = dataset?.unit || "";
+
+      const table = document.createElement("table");
+      const thead = table.createTHead();
+      const hrow = thead.insertRow();
+      const thPeriod = document.createElement("th");
+      thPeriod.textContent = state.aggregationPeriod === "year" ? "Year" : "Month";
+      hrow.append(thPeriod);
+      result.series.forEach((s) => {
+        const th = document.createElement("th");
+        th.textContent = s.label + (unit ? ` (${formatUnitLabel(unit)})` : "");
+        hrow.append(th);
+      });
+
+      const tbody = table.createTBody();
+      result.rows.forEach(({ key, values }) => {
+        const tr = tbody.insertRow();
+        tr.insertCell().textContent = formatPeriodKey(key, state.aggregationPeriod);
+        result.series.forEach((s) => {
+          const v = values[s.key];
+          tr.insertCell().textContent = formatTableValue(v, unit);
+        });
+      });
+
+      elements.aggTable.append(table);
     }
 
     function updateSummaryChip() {
@@ -1710,6 +1968,22 @@
 
     function round(value) {
       return Number(value).toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+    }
+
+    function formatTableValue(v, unit) {
+      if (v == null) return "—";
+      if (unit === "min") {
+        const totalMin = Math.round(v);
+        const h = Math.floor(totalMin / 60);
+        const m = totalMin % 60;
+        return h > 0 ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m`;
+      }
+      return round(v);
+    }
+
+    function formatUnitLabel(unit) {
+      if (unit === "min") return "h:m";
+      return unit;
     }
 
     function clamp(value, min, max) {
