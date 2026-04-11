@@ -2486,24 +2486,6 @@
     }
 
     init();
-
-    (function() {
-      const floater = document.getElementById('kofi-floater');
-      const panel = document.getElementById('kofi-panel');
-      const closeBtn = document.getElementById('kofi-close');
-
-      floater.addEventListener('click', () => {
-        floater.classList.add('hidden');
-        closeBtn.classList.remove('hidden');
-        panel.classList.remove('hidden');
-      });
-
-      closeBtn.addEventListener('click', () => {
-        panel.classList.add('hidden');
-        closeBtn.classList.add('hidden');
-        floater.classList.remove('hidden');
-      });
-    })();
   </script>
 
   <!-- Ko-fi Donation Widget -->
@@ -2518,6 +2500,28 @@
   <div id="kofi-close" class="kofi-floater hidden">
     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-6.489 5.8a1 1 0 0 0 -1.218 1.567l1.292 1.293l-1.292 1.293l-.083 .094a1 1 0 0 0 1.497 1.32l1.293 -1.292l1.293 1.292l.094 .083a1 1 0 0 0 1.32 -1.497l-1.292 -1.293l1.292 -1.293l.083 -.094a1 1 0 0 0 -1.497 -1.32l-1.293 1.292l-1.293 -1.292l-.094 -.083z" /></svg>
   </div>
+
+  <script>
+    (function() {
+      const floater = document.getElementById('kofi-floater');
+      const panel = document.getElementById('kofi-panel');
+      const closeBtn = document.getElementById('kofi-close');
+
+      if (floater && panel && closeBtn) {
+        floater.addEventListener('click', () => {
+          floater.classList.add('hidden');
+          closeBtn.classList.remove('hidden');
+          panel.classList.remove('hidden');
+        });
+
+        closeBtn.addEventListener('click', () => {
+          panel.classList.add('hidden');
+          closeBtn.classList.add('hidden');
+          floater.classList.remove('hidden');
+        });
+      }
+    })();
+  </script>
 </body>
 
 </html>
