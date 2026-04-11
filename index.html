@@ -798,6 +798,66 @@
         height: 40dvh;
       }
     }
+
+    /* Donation Widget */
+    .kofi-floater {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 52px;
+      height: 52px;
+      background: var(--panel);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10000;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      color: var(--text-muted);
+    }
+
+    .kofi-floater:hover {
+      transform: scale(1.08) translateY(-2px);
+      box-shadow: var(--shadow-hover);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .kofi-floater svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .kofi-panel {
+      position: fixed;
+      bottom: 84px;
+      right: 24px;
+      width: 400px;
+      height: 660px;
+      max-width: calc(100vw - 48px);
+      max-height: calc(100vh - 120px);
+      background: var(--panel);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-hover);
+      z-index: 9999;
+      overflow: hidden;
+      animation: kofiAppear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes kofiAppear {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .kofi-floater.hidden, .kofi-panel.hidden { display: none; }
   </style>
 </head>
 
@@ -2426,7 +2486,38 @@
     }
 
     init();
+
+    (function() {
+      const floater = document.getElementById('kofi-floater');
+      const panel = document.getElementById('kofi-panel');
+      const closeBtn = document.getElementById('kofi-close');
+
+      floater.addEventListener('click', () => {
+        floater.classList.add('hidden');
+        closeBtn.classList.remove('hidden');
+        panel.classList.remove('hidden');
+      });
+
+      closeBtn.addEventListener('click', () => {
+        panel.classList.add('hidden');
+        closeBtn.classList.add('hidden');
+        floater.classList.remove('hidden');
+      });
+    })();
   </script>
+
+  <!-- Ko-fi Donation Widget -->
+  <div id="kofi-floater" class="kofi-floater" title="Support my work">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 14c.83 .642 2.077 1.017 3.5 1c1.423 .017 2.67 -.358 3.5 -1c.83 -.642 2.077 -1.017 3.5 -1c1.423 -.017 2.67 .358 3.5 1" /><path d="M8 3a2.4 2.4 0 0 0 -1 2a2.4 2.4 0 0 0 1 2" /><path d="M12 3a2.4 2.4 0 0 0 -1 2a2.4 2.4 0 0 0 1 2" /><path d="M3 10h14v5a6 6 0 0 1 -6 6h-2a6 6 0 0 1 -6 -6v-5z" /><path d="M16.746 16.726a3 3 0 1 0 .252 -5.555" /></svg>
+  </div>
+
+  <div id="kofi-panel" class="kofi-panel hidden">
+    <iframe id='kofiframe' src='https://ko-fi.com/gramoflava/?hidefeed=true&widget=true&embed=true&preview=true' style='border:none;width:100%;padding:0;background:transparent;' height='660' title='gramoflava'></iframe>
+  </div>
+
+  <div id="kofi-close" class="kofi-floater hidden">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-6.489 5.8a1 1 0 0 0 -1.218 1.567l1.292 1.293l-1.292 1.293l-.083 .094a1 1 0 0 0 1.497 1.32l1.293 -1.292l1.293 1.292l.094 .083a1 1 0 0 0 1.32 -1.497l-1.292 -1.293l1.292 -1.293l.083 -.094a1 1 0 0 0 -1.497 -1.32l-1.293 1.292l-1.293 -1.292l-.094 -.083z" /></svg>
+  </div>
 </body>
 
 </html>
