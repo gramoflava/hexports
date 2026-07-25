@@ -1,62 +1,29 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-accent="hexports">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <title>Time Series Explorer</title>
+  <title>hexports — health export visualizer</title>
+  <meta name="description"
+    content="Explore Apple Health and other time-series JSON or CSV exports locally in your browser.">
+  <script>
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('theme'); } catch (e) { }
+      if (t === 'light') document.documentElement.classList.add('theme-light');
+      else if (t === 'dark') document.documentElement.classList.add('theme-dark');
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Outfit:wght@400;500;600&amp;display=swap">
+  <link rel="stylesheet" href="gramofdesign/gramof.css">
+  <link rel="icon" href="gramofdesign/marks/hexports.svg" type="image/svg+xml">
+  <script defer src="gramofdesign/theme.js"></script>
   <style>
-    :root {
-      color-scheme: light dark;
-      --bg: #f5f5f7;
-      --panel: rgba(255, 255, 255, 0.7);
-      --panel-strong: #ffffff;
-      --line: rgba(0, 0, 0, 0.06);
-      --line-strong: rgba(0, 0, 0, 0.12);
-      --text: #1d1d1f;
-      --text-muted: #86868b;
-      --accent: #0066cc;
-      --danger: #ff3b30;
-      --chip: rgba(0, 102, 204, 0.08);
-      --canvas-bg: #ffffff;
-      --shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-      --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.02);
-      --tooltip-bg: rgba(0, 0, 0, 0.85);
-      --tooltip-text: #ffffff;
-      --input-bg: rgba(0, 0, 0, 0.03);
-      --input-bg-focus: #ffffff;
-      --btn-secondary: #e8e8ed;
-      --btn-secondary-text: #1d1d1f;
-      --radius-lg: 16px;
-      --radius-md: 10px;
-      --radius-sm: 8px;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #000000;
-        --panel: rgba(28, 28, 30, 0.7);
-        --panel-strong: #1c1c1e;
-        --line: rgba(255, 255, 255, 0.08);
-        --line-strong: rgba(255, 255, 255, 0.16);
-        --text: #f5f5f7;
-        --text-muted: #98989d;
-        --accent: #2997ff;
-        --danger: #ff453a;
-        --chip: rgba(41, 151, 255, 0.12);
-        --canvas-bg: #1c1c1e;
-        --shadow: 0 4px 24px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
-        --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1);
-        --tooltip-bg: rgba(255, 255, 255, 0.95);
-        --tooltip-text: #000000;
-        --input-bg: rgba(255, 255, 255, 0.05);
-        --input-bg-focus: #2c2c2e;
-        --btn-secondary: #3a3a3c;
-        --btn-secondary-text: #f5f5f7;
-      }
-    }
-
     * {
       box-sizing: border-box;
       -webkit-font-smoothing: antialiased;
@@ -68,7 +35,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
       font-size: 13px;
       color: var(--text);
-      background: var(--bg);
+      background: var(--page);
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
@@ -86,12 +53,12 @@
     }
 
     .panel {
-      background: var(--panel);
+      background: var(--glass);
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(var(--blur-panel));
+      -webkit-backdrop-filter: blur(var(--blur-panel));
     }
 
     .sidebar {
@@ -161,7 +128,7 @@
       border-radius: var(--radius-md);
       padding: 14px;
       text-align: center;
-      background: var(--chip);
+      background: var(--accent-soft);
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       cursor: pointer;
     }
@@ -183,7 +150,7 @@
     textarea {
       width: 100%;
       border: 1px solid transparent;
-      background: var(--input-bg);
+      background: var(--surface-sunk);
       color: var(--text);
       border-radius: var(--radius-sm);
       padding: 8px 10px;
@@ -198,9 +165,9 @@
     input:hover,
     select:hover,
     textarea:hover {
-      background: var(--input-bg-focus);
+      background: var(--surface);
       border-color: var(--line-strong);
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-md);
     }
 
     input:focus,
@@ -208,7 +175,7 @@
     textarea:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 2px var(--chip);
+      box-shadow: var(--shadow-sm);
     }
 
     input[type="range"] {
@@ -223,41 +190,6 @@
       color: var(--text-muted);
       padding: 0 2px;
       margin-top: 4px;
-    }
-
-    button {
-      border: 0;
-      background: var(--accent);
-      color: white;
-      font: inherit;
-      padding: 8px 14px;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-weight: 500;
-      font-size: 13px;
-      transition: all 0.1s;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    }
-
-    button:active {
-      transform: scale(0.97);
-    }
-
-    button:hover {
-      filter: brightness(1.05);
-    }
-
-    button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      filter: none;
-      transform: none;
-    }
-
-    button.secondary {
-      background: var(--btn-secondary);
-      color: var(--btn-secondary-text);
-      box-shadow: none;
     }
 
     label {
@@ -300,11 +232,10 @@
     }
 
     .series-item,
-    .marker-item,
-    .stat-card {
+    .marker-item {
       border: 1px solid var(--line);
       border-radius: var(--radius-md);
-      background: var(--panel-strong);
+      background: var(--surface);
       padding: 12px;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
@@ -334,7 +265,7 @@
       gap: 6px;
       border-radius: var(--radius-sm);
       padding: 4px 8px;
-      background: var(--input-bg);
+      background: var(--surface-sunk);
       font-size: 11px;
       font-weight: 500;
       color: var(--text);
@@ -343,7 +274,7 @@
     .color-dot {
       width: 10px;
       height: 10px;
-      border-radius: 50%;
+      border-radius: var(--radius-pill);
       display: inline-block;
       flex: none;
     }
@@ -351,12 +282,10 @@
     .chart-card {
       position: relative;
       border-radius: var(--radius-lg);
-      background: var(--panel);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: var(--surface);
       border: 1px solid var(--line);
       padding: 12px;
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-md);
     }
 
     .toolbar {
@@ -378,9 +307,9 @@
     .canvas-wrap {
       position: relative;
       border-radius: var(--radius-md);
-      background: var(--canvas-bg);
+      background: var(--surface);
       border: 1px solid var(--line);
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+      box-shadow: var(--shadow-sm);
       min-height: clamp(280px, 45dvh, 500px);
       overflow: hidden;
     }
@@ -414,8 +343,8 @@
       padding: 8px 10px;
       min-width: 160px;
       box-shadow: var(--shadow-hover);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(var(--blur-panel));
+      -webkit-backdrop-filter: blur(var(--blur-panel));
       opacity: 0;
       transform: translateY(4px);
       transition: opacity 120ms ease, transform 120ms ease;
@@ -452,11 +381,6 @@
     .marker-list button {
       width: auto;
       justify-self: start;
-    }
-
-    .danger {
-      background: color-mix(in srgb, var(--danger) 18%, transparent);
-      color: var(--danger);
     }
 
     .series-controls {
@@ -503,12 +427,12 @@
     .swatch {
       width: 18px;
       height: 18px;
-      border-radius: 50%;
+      border-radius: var(--radius-pill);
       border: 2px solid transparent;
       padding: 0;
       min-width: 18px;
       background: transparent;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+      box-shadow: none;
       display: inline-grid;
       place-items: center;
     }
@@ -523,7 +447,8 @@
       display: block;
       width: 100%;
       height: 100%;
-      border-radius: 50%;
+      background: var(--swatch-color);
+      border-radius: var(--radius-pill);
     }
 
     .marker-item {
@@ -535,12 +460,16 @@
       font-size: 10px;
       padding: 2px 6px;
       border-radius: var(--radius-sm);
-      background: var(--chip);
+      background: var(--accent-soft);
       color: var(--text-muted);
     }
 
     .marker-list {
       margin-top: 8px;
+    }
+
+    .marker-help {
+      margin-bottom: var(--space-2);
     }
 
     .agg-section {
@@ -558,33 +487,9 @@
       margin-bottom: 10px;
     }
 
-    .agg-toggle {
-      display: flex;
-      background: var(--btn-secondary);
-      border-radius: var(--radius-sm);
-      padding: 2px;
-      gap: 2px;
-    }
-
-    .agg-btn {
-      background: transparent;
-      color: var(--text-muted);
-      padding: 4px 12px;
-      border-radius: calc(var(--radius-sm) - 2px);
-      font-size: 11px;
-      font-weight: 500;
-      box-shadow: none;
-    }
-
-    .agg-btn.active {
-      background: var(--panel-strong);
-      color: var(--text);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-    }
-
     .agg-wrap {
       overflow-x: auto;
-      border-radius: 14px;
+      border-radius: var(--radius-md);
       border: 1px solid var(--line);
       max-height: 340px;
       overflow-y: auto;
@@ -605,7 +510,7 @@
       text-transform: uppercase;
       letter-spacing: 0.04em;
       border-bottom: 1px solid var(--line);
-      background: var(--panel-strong);
+      background: var(--surface);
       position: sticky;
       top: 0;
       z-index: 1;
@@ -644,7 +549,7 @@
       border: 1px solid var(--line);
       border-radius: var(--radius-md);
       padding: 10px;
-      background: var(--panel-strong);
+      background: var(--surface);
       margin-bottom: 8px;
     }
 
@@ -668,8 +573,8 @@
       white-space: nowrap;
       flex: none;
       padding: 2px 5px;
-      background: var(--input-bg);
-      border-radius: 4px;
+      background: var(--surface-sunk);
+      border-radius: var(--radius-xs);
     }
 
     .slot-header select {
@@ -697,7 +602,7 @@
     .marker-popup {
       position: absolute;
       pointer-events: all;
-      background: var(--panel-strong);
+      background: var(--surface);
       border: 1px solid var(--line-strong);
       border-radius: var(--radius-md);
       padding: 12px;
@@ -720,15 +625,6 @@
 
     .marker-popup-header strong {
       font-size: 12px;
-    }
-
-    .icon-btn {
-      background: transparent;
-      color: var(--text-muted);
-      padding: 2px 5px;
-      font-size: 12px;
-      box-shadow: none;
-      line-height: 1;
     }
 
     .marker-popup-form {
@@ -806,12 +702,12 @@
       right: 24px;
       width: 52px;
       height: 52px;
-      background: var(--panel);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: var(--glass);
+      backdrop-filter: blur(var(--blur-panel));
+      -webkit-backdrop-filter: blur(var(--blur-panel));
       border: 1px solid var(--line);
-      border-radius: 50%;
-      box-shadow: var(--shadow);
+      border-radius: var(--radius-pill);
+      box-shadow: var(--shadow-md);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -841,9 +737,9 @@
       height: 660px;
       max-width: calc(100vw - 48px);
       max-height: calc(100vh - 120px);
-      background: var(--panel);
-      backdrop-filter: blur(30px);
-      -webkit-backdrop-filter: blur(30px);
+      background: var(--glass);
+      backdrop-filter: blur(var(--blur-panel));
+      -webkit-backdrop-filter: blur(var(--blur-panel));
       border: 1px solid var(--line-strong);
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-hover);
@@ -852,20 +748,263 @@
       animation: kofiAppear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
+    .kofi-frame {
+      width: 100%;
+      padding: 0;
+      background: transparent;
+      border: 0;
+    }
+
     @keyframes kofiAppear {
       from { opacity: 0; transform: translateY(20px) scale(0.98); }
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     .kofi-floater.hidden, .kofi-panel.hidden { display: none; }
+
+    .brand-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: var(--radius-sm);
+    }
+
+    #sourceName {
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .workspace {
+      min-height: 0;
+    }
+
+    .stage {
+      overflow-y: auto;
+    }
+
+    .chart-card {
+      min-height: 100%;
+      padding: var(--space-4);
+    }
+
+    .toolbar {
+      min-height: 32px;
+      margin-bottom: var(--space-3);
+    }
+
+    .toolbar-group {
+      flex-wrap: nowrap;
+    }
+
+    .add-dataset {
+      width: 100%;
+      margin-top: var(--space-2);
+    }
+
+    .add-dataset[hidden] {
+      display: none;
+    }
+
+    .tooltip {
+      border: 1px solid var(--tooltip-line);
+    }
+
+    .tooltip-date {
+      margin-bottom: var(--space-1);
+      opacity: 0.7;
+    }
+
+    .series-color-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 5px;
+      vertical-align: middle;
+      background: var(--series-color);
+      border-radius: var(--radius-pill);
+    }
+
+    .table-color-dot {
+      width: 7px;
+      height: 7px;
+      margin-right: var(--space-1);
+    }
+
+    .mobile-readout {
+      display: none;
+      margin-top: var(--space-2);
+      padding: var(--space-3);
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+      .chart-card {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .appbar__sep,
+      #sourceName {
+        display: none;
+      }
+
+      .chart-card {
+        padding: var(--space-2);
+      }
+
+      .toolbar {
+        flex-wrap: nowrap;
+        margin-inline: calc(-1 * var(--space-2));
+        padding-inline: var(--space-2);
+      }
+
+      .tooltip {
+        display: none;
+      }
+
+      .mobile-readout {
+        display: block;
+      }
+
+      .kofi-floater {
+        right: var(--space-3);
+        bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+      }
+
+      .kofi-panel {
+        right: var(--space-3);
+        bottom: calc(76px + env(safe-area-inset-bottom));
+        max-width: calc(100vw - 2 * var(--space-3));
+      }
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      .palette {
+        grid-template-columns: repeat(8, 44px);
+        overflow-x: auto;
+      }
+
+      .swatch {
+        width: 44px;
+        height: 44px;
+        padding: 10px;
+      }
+    }
   </style>
 </head>
 
-<body>
-  <div class="shell">
-    <aside class="panel sidebar">
-      <h1>Time Series Explorer</h1>
-      <p>Load a JSON or CSV export and explore your data locally.</p>
+<body class="app">
+  <header class="appbar">
+    <span class="brand">
+      <img class="brand-icon" src="gramofdesign/marks/hexports.svg" alt="">
+      hexports
+    </span>
+    <span class="appbar__sep"></span>
+    <button class="btn btn--primary" id="openDataButton" type="button">Open data</button>
+    <span class="appbar__spacer"></span>
+    <span class="hint hide-narrow" id="sourceName">No file open</span>
+    <div class="segmented segmented--icon" role="group" aria-label="Color theme" data-theme-switch>
+      <button class="segmented__btn" type="button" data-theme="light" aria-label="Light" title="Light"
+        aria-pressed="false">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path
+            d="M6.343 17.657l-1.414 1.414M6.343 6.343L4.929 4.929M17.657 6.343l1.414 -1.414M17.657 17.657l1.414 1.414M12 20v2M12 2v2M20 12h2M2 12h2">
+          </path>
+        </svg>
+      </button>
+      <button class="segmented__btn" type="button" data-theme="auto" aria-label="Auto" title="Auto"
+        aria-pressed="false"><span>A</span></button>
+      <button class="segmented__btn" type="button" data-theme="dark" aria-label="Dark" title="Dark"
+        aria-pressed="false">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3h.393a7.5 7.5 0 0 0 7.92 12.446A9 9 0 1 1 12 2.992z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <main class="stage">
+      <div class="chart-card solid">
+        <div class="toolbar scroller">
+          <div class="toolbar-group">
+            <button id="resetViewButton" type="button" class="btn">Reset view</button>
+            <button id="fitSelectionButton" type="button" class="btn" disabled>Fit selection</button>
+          </div>
+          <div class="toolbar-group">
+            <span class="tag" id="summaryChip">No data</span>
+            <div class="btn-pair">
+              <button id="copyPngButton" type="button">Copy PNG</button>
+              <button id="exportPngButton" type="button">Download PNG</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="chartCanvas"></canvas>
+          <div class="overlay">
+            <div class="tooltip" id="tooltip"></div>
+          </div>
+          <div class="empty" id="emptyState">
+            <div>
+              <h3>The chart will appear here</h3>
+              <p>Load a file and select at least one data series.</p>
+            </div>
+          </div>
+        </div>
+        <div class="mobile-readout sunk" id="mobileReadout" aria-live="polite">
+          Touch or drag across the chart to inspect values.
+        </div>
+
+        <div class="marker-popup solid" id="markerPopup">
+          <div class="marker-popup-header">
+            <strong>New Marker</strong>
+            <button type="button" class="btn btn--quiet btn--icon" id="markerPopupClose" aria-label="Close">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 6l-12 12M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="marker-popup-form">
+            <label>
+              <span>Date</span>
+              <input type="date" id="popupMarkerDate">
+            </label>
+            <label>
+              <span>Label</span>
+              <input type="text" id="popupMarkerLabel" placeholder="e.g. treatment start">
+            </label>
+            <div class="palette-block">
+              <span class="hint">Color</span>
+              <div id="popupMarkerPalette" class="palette"></div>
+            </div>
+            <div class="popup-buttons">
+              <button type="button" class="btn btn--primary" id="popupMarkerSave">Add Marker</button>
+              <button type="button" class="btn" id="popupMarkerCancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="agg-section" id="aggSection">
+          <div class="agg-header">
+            <div class="segmented segmented--square">
+              <button type="button" class="segmented__btn is-active" id="aggMonthBtn">Monthly</button>
+              <button type="button" class="segmented__btn" id="aggYearBtn">Yearly</button>
+            </div>
+          </div>
+          <div class="agg-wrap stats" id="aggTable"></div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="inspector">
+      <h2>Explore health data</h2>
+      <p>Load a JSON or CSV export. Your data stays in this browser.</p>
 
       <div class="stack">
         <section class="section">
@@ -882,7 +1021,7 @@
         <section class="section">
           <h2>Datasets</h2>
           <div id="slotsList"></div>
-          <button type="button" class="secondary" id="addSlotButton" style="width:100%;display:none;margin-top:8px">Add dataset</button>
+          <button type="button" class="btn add-dataset" id="addSlotButton" hidden>Add dataset</button>
         </section>
 
         <section class="section">
@@ -913,74 +1052,13 @@
 
         <section class="section">
           <h2>Date Markers</h2>
-          <p style="margin-bottom:8px">Click on the chart to add a marker.</p>
+          <p class="marker-help">Click on the chart to add a marker.</p>
           <div class="marker-list" id="markerList"></div>
         </section>
       </div>
     </aside>
-
-    <main class="content">
-      <div class="chart-card panel">
-        <div class="toolbar">
-          <div class="toolbar-group">
-            <button id="resetViewButton" type="button" class="secondary">Reset view</button>
-            <button id="fitSelectionButton" type="button" class="secondary" disabled>Fit selection</button>
-          </div>
-          <div class="toolbar-group">
-            <span class="chip" id="summaryChip">No data</span>
-          </div>
-        </div>
-
-        <div class="canvas-wrap" id="canvasWrap">
-          <canvas id="chartCanvas"></canvas>
-          <div class="overlay">
-            <div class="tooltip" id="tooltip"></div>
-          </div>
-          <div class="empty" id="emptyState">
-            <div>
-              <h3>The chart will appear here</h3>
-              <p>Load a file and select at least one data series.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="marker-popup" id="markerPopup">
-          <div class="marker-popup-header">
-            <strong>New Marker</strong>
-            <button type="button" class="icon-btn" id="markerPopupClose">✕</button>
-          </div>
-          <div class="marker-popup-form">
-            <label>
-              <span>Date</span>
-              <input type="date" id="popupMarkerDate">
-            </label>
-            <label>
-              <span>Label</span>
-              <input type="text" id="popupMarkerLabel" placeholder="e.g. treatment start">
-            </label>
-            <div class="palette-block">
-              <span class="hint">Color</span>
-              <div id="popupMarkerPalette" class="palette"></div>
-            </div>
-            <div class="popup-buttons">
-              <button type="button" id="popupMarkerSave">Add Marker</button>
-              <button type="button" class="secondary" id="popupMarkerCancel">Cancel</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="agg-section" id="aggSection">
-          <div class="agg-header">
-            <div class="agg-toggle">
-              <button type="button" class="agg-btn active" id="aggMonthBtn">Monthly</button>
-              <button type="button" class="agg-btn" id="aggYearBtn">Yearly</button>
-            </div>
-          </div>
-          <div class="agg-wrap" id="aggTable"></div>
-        </div>
-      </div>
-    </main>
   </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script>
     const HEALTH_EXPORTER_NAMES = {
@@ -1004,10 +1082,12 @@
       wristTemperature: { label: "Wrist Temperature", unitLabel: "°C", kind: "vitals" }
     };
 
-    const palettes = {
-      light: ["#2563eb", "#0891b2", "#0f766e", "#16a34a", "#65a30d", "#ca8a04", "#ea580c", "#dc2626", "#db2777", "#9333ea", "#7c3aed", "#4f46e5", "#0284c7", "#475569", "#334155", "#7c2d12"],
-      dark: ["#60a5fa", "#22d3ee", "#2dd4bf", "#4ade80", "#a3e635", "#facc15", "#fb923c", "#f87171", "#f472b6", "#c084fc", "#a78bfa", "#818cf8", "#38bdf8", "#94a3b8", "#e5e7eb", "#fdba74"]
-    };
+    const PALETTE_TOKENS = [
+      "--palette-blue", "--palette-cyan", "--palette-teal", "--palette-green",
+      "--palette-lime", "--palette-yellow", "--palette-orange", "--palette-red",
+      "--palette-pink", "--palette-fuchsia", "--palette-purple", "--palette-violet",
+      "--palette-indigo", "--palette-sky", "--palette-slate", "--palette-brown"
+    ];
 
     const SMOOTH_LEVELS = [0, 1, 7, 30, 90, 182, 365];
     const SMOOTH_LABELS = ["None", "1d", "1w", "1mo", "3mo", "6mo", "1y"];
@@ -1038,6 +1118,8 @@
     };
 
     const elements = {
+      openDataButton: document.getElementById("openDataButton"),
+      sourceName: document.getElementById("sourceName"),
       dropzone: document.getElementById("dropzone"),
       fileInput: document.getElementById("fileInput"),
       fileStatus: document.getElementById("fileStatus"),
@@ -1057,12 +1139,15 @@
       popupMarkerCancel: document.getElementById("popupMarkerCancel"),
       resetViewButton: document.getElementById("resetViewButton"),
       fitSelectionButton: document.getElementById("fitSelectionButton"),
+      copyPngButton: document.getElementById("copyPngButton"),
+      exportPngButton: document.getElementById("exportPngButton"),
       summaryChip: document.getElementById("summaryChip"),
       canvasWrap: document.getElementById("canvasWrap"),
       chartCard: document.querySelector(".chart-card"),
       emptyState: document.getElementById("emptyState"),
       chartCanvas: document.getElementById("chartCanvas"),
       tooltip: document.getElementById("tooltip"),
+      mobileReadout: document.getElementById("mobileReadout"),
       aggSection: document.getElementById("aggSection"),
       aggTable: document.getElementById("aggTable"),
       aggMonthBtn: document.getElementById("aggMonthBtn"),
@@ -1090,6 +1175,8 @@
     }
 
     function bindEvents() {
+      elements.openDataButton.addEventListener("click", () => elements.fileInput.click());
+
       elements.fileInput.addEventListener("change", async (event) => {
         const [file] = event.target.files || [];
         if (!file) return;
@@ -1135,14 +1222,14 @@
 
       elements.aggMonthBtn.addEventListener("click", () => {
         state.aggregationPeriod = "month";
-        elements.aggMonthBtn.classList.add("active");
-        elements.aggYearBtn.classList.remove("active");
+        elements.aggMonthBtn.classList.add("is-active");
+        elements.aggYearBtn.classList.remove("is-active");
         renderAggregationTable();
       });
       elements.aggYearBtn.addEventListener("click", () => {
         state.aggregationPeriod = "year";
-        elements.aggYearBtn.classList.add("active");
-        elements.aggMonthBtn.classList.remove("active");
+        elements.aggYearBtn.classList.add("is-active");
+        elements.aggMonthBtn.classList.remove("is-active");
         renderAggregationTable();
       });
 
@@ -1154,6 +1241,11 @@
         fitToVisibleSeries();
         drawChart();
       });
+      elements.copyPngButton.addEventListener("click", copyChartPng);
+      elements.exportPngButton.addEventListener("click", downloadChartPng);
+      if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
+        elements.copyPngButton.hidden = true;
+      }
 
       elements.chartCanvas.addEventListener("wheel", handleWheel, { passive: false });
       elements.chartCanvas.addEventListener("pointerdown", handlePointerDown);
@@ -1184,7 +1276,7 @@
 
     function watchThemeChanges() {
       const media = window.matchMedia("(prefers-color-scheme: dark)");
-      media.addEventListener("change", () => {
+      const refreshTheme = () => {
         const pool = getColorPool();
         state.datasets.forEach((dataset) => {
           dataset.series.forEach((series) => {
@@ -1196,6 +1288,10 @@
         state.markerDraftColor = pool[0];
         renderPopupPalette();
         renderAll();
+      };
+      document.addEventListener("themechange", refreshTheme);
+      media.addEventListener("change", () => {
+        if (!localStorage.getItem("theme")) refreshTheme();
       });
     }
 
@@ -1212,7 +1308,7 @@
     // ─── Color helpers ────────────────────────────────────────────────────────
 
     function getColorPool() {
-      return window.matchMedia("(prefers-color-scheme: dark)").matches ? palettes.dark : palettes.light;
+      return PALETTE_TOKENS.map(getCssVariable);
     }
 
     function getUsedColorIndices(excludeSlotId) {
@@ -1267,6 +1363,7 @@
 
         state.datasets = datasets;
         state.chartSlots = [];
+        elements.sourceName.textContent = fileName;
 
         if (datasets.length) {
           addSlotForDataset(datasets[0]);
@@ -1281,6 +1378,7 @@
       } catch (error) {
         state.datasets = [];
         state.chartSlots = [];
+        elements.sourceName.textContent = "Could not open file";
         resetChartView();
         renderAll();
         elements.fileStatus.textContent = `Could not parse ${fileName}: ${error.message}`;
@@ -1496,7 +1594,7 @@
         elements.slotsList.append(buildSlotItem(slot, index));
       });
       const canAdd = state.chartSlots.length < 2 && state.datasets.length > 0;
-      elements.addSlotButton.style.display = canAdd ? "" : "none";
+      elements.addSlotButton.hidden = !canAdd;
     }
 
     function buildSlotItem(slot, slotIndex) {
@@ -1529,8 +1627,9 @@
 
       const removeBtn = document.createElement("button");
       removeBtn.type = "button";
-      removeBtn.className = "danger slot-remove-btn";
-      removeBtn.textContent = "×";
+      removeBtn.className = "btn btn--quiet btn--danger btn--icon slot-remove-btn";
+      removeBtn.setAttribute("aria-label", `Remove ${axisLabel.toLowerCase()} dataset`);
+      removeBtn.innerHTML = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6l-12 12M6 6l12 12"></path></svg>';
       removeBtn.addEventListener("click", () => removeSlot(slot.id));
       header.append(removeBtn);
 
@@ -1648,7 +1747,7 @@
           item.innerHTML = `
             <div class="marker-top">
               <span class="chip"><span class="color-dot" style="background:${marker.color}"></span>${escapeHtml(marker.label || "Untitled")}</span>
-              <button type="button" class="danger">Delete</button>
+              <button type="button" class="btn btn--quiet btn--danger">Delete</button>
             </div>
             <div class="hint">${formatDate(marker.x)}</div>
           `;
@@ -1680,6 +1779,56 @@
     function updateToolbar() {
       const hasData = getProcessedSeries().length > 0;
       elements.fitSelectionButton.disabled = !hasData;
+      elements.copyPngButton.disabled = !hasData;
+      elements.exportPngButton.disabled = !hasData;
+    }
+
+    function chartPngBlob() {
+      const output = document.createElement("canvas");
+      output.width = elements.chartCanvas.width;
+      output.height = elements.chartCanvas.height;
+      const outputCtx = output.getContext("2d");
+      outputCtx.fillStyle = getCssVariable("--surface");
+      outputCtx.fillRect(0, 0, output.width, output.height);
+      outputCtx.drawImage(elements.chartCanvas, 0, 0);
+      return new Promise((resolve, reject) => {
+        output.toBlob((blob) => blob ? resolve(blob) : reject(new Error("PNG generation failed")), "image/png");
+      });
+    }
+
+    async function copyChartPng() {
+      try {
+        const blobPromise = chartPngBlob();
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blobPromise })]);
+        toast("Chart PNG copied.");
+      } catch (error) {
+        toast("Could not copy the chart PNG.", true);
+      }
+    }
+
+    async function downloadChartPng() {
+      try {
+        const blob = await chartPngBlob();
+        const link = document.createElement("a");
+        const stem = (state.sourceName || "hexports-chart").replace(/\.[^.]+$/, "").replace(/[^\w-]+/g, "-");
+        link.download = `${stem || "hexports-chart"}.png`;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+        toast("Chart PNG downloaded.");
+      } catch (error) {
+        toast("Could not download the chart PNG.", true);
+      }
+    }
+
+    let toastTimer = null;
+    function toast(message, isError = false) {
+      const toastElement = document.getElementById("toast");
+      toastElement.textContent = message;
+      toastElement.classList.toggle("is-error", isError);
+      toastElement.classList.add("is-shown");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastElement.classList.remove("is-shown"), isError ? 6000 : 3600);
     }
 
     // ─── Marker popup ─────────────────────────────────────────────────────────
@@ -1903,10 +2052,10 @@
 
     function drawGrid({ padding, plotWidth, plotHeight, minX, maxX, scaleX, yRangeLeft, yRangeRight, hasRight }) {
       ctx.save();
-      ctx.strokeStyle = getCssVariable("--line");
+      ctx.strokeStyle = getCssVariable("--chart-grid");
       ctx.lineWidth = 1;
-      ctx.fillStyle = getCssVariable("--text-muted");
-      ctx.font = '10px -apple-system, BlinkMacSystemFont, "Inter", sans-serif';
+      ctx.fillStyle = getCssVariable("--chart-axis-label");
+      ctx.font = `10px ${getCssVariable("--font-sans")}`;
 
       const yTicks = 5;
       for (let i = 0; i <= yTicks; i++) {
@@ -1944,7 +2093,7 @@
         ctx.fillText(formatDateShort(val), x, padding.top + plotHeight + 16);
       }
 
-      ctx.strokeStyle = getCssVariable("--line-strong");
+      ctx.strokeStyle = getCssVariable("--chart-axis");
       ctx.beginPath();
       ctx.moveTo(padding.left, padding.top);
       ctx.lineTo(padding.left, padding.top + plotHeight);
@@ -1978,7 +2127,7 @@
         ctx.setLineDash([]);
 
         ctx.fillStyle = marker.color;
-        ctx.font = '11px -apple-system, BlinkMacSystemFont, "Inter", sans-serif';
+        ctx.font = `11px ${getCssVariable("--font-sans")}`;
         ctx.textAlign = "left";
         ctx.fillText(marker.label || formatDateShort(marker.x), x + 6, padding.top + 14);
 
@@ -1989,7 +2138,7 @@
           ctx.beginPath();
           ctx.arc(cx, cy, r, 0, Math.PI * 2);
           ctx.fill();
-          ctx.strokeStyle = "rgba(255,255,255,0.9)";
+          ctx.strokeStyle = getCssVariable("--text-on-accent");
           ctx.lineWidth = 1.8;
           ctx.lineCap = "round";
           ctx.beginPath();
@@ -2019,7 +2168,7 @@
 
       // Vertical crosshair
       ctx.save();
-      ctx.strokeStyle = getCssVariable("--line-strong");
+      ctx.strokeStyle = getCssVariable("--chart-axis");
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(x, padding.top);
@@ -2066,10 +2215,12 @@
 
       const rows = entries.map(({ series, point }) => {
         const unit = series.datasetUnit ? ` ${escapeHtml(series.datasetUnit)}` : "";
-        return `<div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${series.color};margin-right:5px;vertical-align:middle"></span>${escapeHtml(series.label)}: <strong>${round(point.y)}${unit}</strong></div>`;
+        return `<div><span class="series-color-dot" style="--series-color:${series.color}"></span>${escapeHtml(series.label)}: <strong>${round(point.y)}${unit}</strong></div>`;
       });
 
-      elements.tooltip.innerHTML = `<div style="margin-bottom:4px;opacity:0.7">${escapeHtml(formatDate(timestamp))}</div>${rows.join("")}`;
+      const content = `<div class="tooltip-date">${escapeHtml(formatDate(timestamp))}</div>${rows.join("")}`;
+      elements.tooltip.innerHTML = content;
+      elements.mobileReadout.innerHTML = content;
     }
 
     function hideTooltip() {
@@ -2334,7 +2485,7 @@
       result.seriesData.forEach(({ series, dataset }) => {
         const th = document.createElement("th");
         const unit = dataset.unit || "";
-        th.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${series.color};margin-right:4px;vertical-align:middle"></span>${escapeHtml(series.label)}${unit ? ` (${escapeHtml(formatUnitLabel(unit))})` : ""}`;
+        th.innerHTML = `<span class="series-color-dot table-color-dot" style="--series-color:${series.color}"></span>${escapeHtml(series.label)}${unit ? ` (${escapeHtml(formatUnitLabel(unit))})` : ""}`;
         hrow.append(th);
       });
 
@@ -2406,7 +2557,7 @@
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = `swatch${selectedColor === color ? " selected" : ""}`;
-        btn.innerHTML = `<span style="background:${color}"></span>`;
+        btn.innerHTML = `<span style="--swatch-color:${color}"></span>`;
         btn.title = color;
         btn.addEventListener("click", () => onSelect(color, idx));
         frag.append(btn);
@@ -2489,17 +2640,27 @@
   </script>
 
   <!-- Ko-fi Donation Widget -->
-  <div id="kofi-floater" class="kofi-floater" title="Support my work">
-    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 14c.83 .642 2.077 1.017 3.5 1c1.423 .017 2.67 -.358 3.5 -1c.83 -.642 2.077 -1.017 3.5 -1c1.423 -.017 2.67 .358 3.5 1" /><path d="M8 3a2.4 2.4 0 0 0 -1 2a2.4 2.4 0 0 0 1 2" /><path d="M12 3a2.4 2.4 0 0 0 -1 2a2.4 2.4 0 0 0 1 2" /><path d="M3 10h14v5a6 6 0 0 1 -6 6h-2a6 6 0 0 1 -6 -6v-5z" /><path d="M16.746 16.726a3 3 0 1 0 .252 -5.555" /></svg>
-  </div>
+  <button type="button" id="kofi-floater" class="kofi-floater" title="Support my work"
+    aria-label="Support my work">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 14c.83 .642 2.077 1.017 3.5 1c1.423 .017 2.67 -.358 3.5 -1c.83 -.642 2.077 -1.017 3.5 -1c1.423 -.017 2.67 .358 3.5 1"></path>
+      <path d="M8 3a2.4 2.4 0 0 0 -1 2a2.4 2.4 0 0 0 1 2M12 3a2.4 2.4 0 0 0 -1 2a2.4 2.4 0 0 0 1 2"></path>
+      <path d="M3 10h14v5a6 6 0 0 1 -6 6H9a6 6 0 0 1 -6 -6v-5zM16.746 16.726a3 3 0 1 0 .252 -5.555"></path>
+    </svg>
+  </button>
 
   <div id="kofi-panel" class="kofi-panel hidden">
-    <iframe id='kofiframe' src='https://ko-fi.com/gramoflava/?hidefeed=true&widget=true&embed=true&preview=true' style='border:none;width:100%;padding:0;background:transparent;' height='660' title='gramoflava'></iframe>
+    <iframe id="kofiframe" class="kofi-frame"
+      src="https://ko-fi.com/gramoflava/?hidefeed=true&amp;widget=true&amp;embed=true&amp;preview=true"
+      height="660" title="Support lava on Ko-fi"></iframe>
   </div>
 
-  <div id="kofi-close" class="kofi-floater hidden">
-    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-6.489 5.8a1 1 0 0 0 -1.218 1.567l1.292 1.293l-1.292 1.293l-.083 .094a1 1 0 0 0 1.497 1.32l1.293 -1.292l1.293 1.292l.094 .083a1 1 0 0 0 1.32 -1.497l-1.292 -1.293l1.292 -1.293l.083 -.094a1 1 0 0 0 -1.497 -1.32l-1.293 1.292l-1.293 -1.292l-.094 -.083z" /></svg>
-  </div>
+  <button type="button" id="kofi-close" class="kofi-floater hidden" aria-label="Close support panel">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M10 10l4 4m0-4l-4 4"></path>
+    </svg>
+  </button>
 
   <script>
     (function() {

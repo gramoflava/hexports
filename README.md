@@ -11,7 +11,8 @@ A single-file browser tool for exploring JSON and CSV exports from the [Health E
 
 ## Usage
 
-Open `data_analyzer.html` directly in any modern browser (Safari, Chrome, Firefox).
+Serve this folder with a local web server and open `index.html` in any modern
+browser (Safari, Chrome, Firefox).
 
 1. **File** — click *Choose File* and pick a `.json` or `.csv` export.
 2. **Series** — select a dataset from the dropdown, then toggle the series checkboxes. Adjust line color and width per series.
@@ -20,7 +21,12 @@ Open `data_analyzer.html` directly in any modern browser (Safari, Chrome, Firefo
    - Scroll to zoom, drag to pan, double-click to reset.
    - Pinch to zoom on a Mac trackpad.
    - *Fit selection* zooms to the current data range; *Reset view* shows everything.
+   - *Copy PNG* and *Download PNG* export the current chart.
 5. **Date markers** — enter a date (defaults to today), optionally a label and color, then click *Add marker*. Markers appear as vertical dashed lines on the chart.
+
+The Light / Auto / Dark switch is shared with the other gramoflava tools.
+Hexports stores only that appearance preference; health data never leaves the
+browser and is not persisted.
 
 ## Supported formats
 
@@ -29,3 +35,8 @@ Open `data_analyzer.html` directly in any modern browser (Safari, Chrome, Firefo
 | Health Exporter JSON | Auto-detected; all exported metric types are listed as separate datasets |
 | Generic JSON | Any array of objects with a date field and numeric fields |
 | CSV | Header row required; date column auto-detected |
+
+## Design
+
+Shared tokens, components, themes and Tabler icons live in `gramofdesign/`.
+The remaining CSS and chart code in `index.html` are specific to Hexports.
