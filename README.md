@@ -27,6 +27,7 @@ browser (Safari, Chrome, Firefox).
    - In *Marker* mode, click the chart to add a dated marker.
    - In *Period* mode, drag across the chart to analyze a range.
    - Analyzed periods show the mean, population standard deviation, and observation count for each selected raw series.
+   - Period statistics are printed directly on the chart and included in a dedicated summary block in PNG exports.
 
 The Light / Auto / Dark switch is shared with the other gramoflava tools.
 Health and workout files never leave the browser and are not persisted.
@@ -56,7 +57,9 @@ node tests/importers.test.js
 
 Workout duration, energy, distance, stroke counts, and similar totals are summed
 in the monthly/yearly table. Heart rate and other sampled workout statistics are
-averaged. Unknown numeric statistics are supported automatically.
+averaged. Workout totals are drawn as discrete event stems and sampled workout
+statistics as points, so separate workouts are never joined by an inferred line.
+Unknown numeric statistics are supported automatically.
 
 Health metrics declare their own aggregation rule: cumulative metrics such as
 steps and nutrition show totals, sampled vitals show averages, and body

@@ -38,6 +38,7 @@ const testableScript = mainScript.replace(/\n\s*init\(\);\s*$/, "") + `
     smoothPoints,
     computeAggregated,
     computeRangeStats,
+    formatRangeStatText,
     state
   };
 `;
@@ -54,6 +55,7 @@ const duration = workoutDatasets.find((dataset) => dataset.id === "workouts:dura
 assert.ok(duration, "Workout duration dataset should be created");
 assert.equal(duration.unit, "min");
 assert.equal(duration.aggregationMethod, "sum");
+assert.equal(duration.displayMode, "event-bars");
 assert.deepEqual(
   Array.from(duration.series, (series) => series.key),
   ["walking", "traditionalStrengthTraining"]
@@ -67,6 +69,7 @@ const averageHeartRate = workoutDatasets.find(
 assert.ok(averageHeartRate, "Average workout heart-rate dataset should be created");
 assert.equal(averageHeartRate.unit, "bpm");
 assert.equal(averageHeartRate.aggregationMethod, "average");
+assert.equal(averageHeartRate.displayMode, "event-points");
 
 const unknownStatistic = workoutDatasets.find(
   (dataset) => dataset.id === "workouts:HKQuantityTypeIdentifierAppleExerciseTime:sum"
@@ -144,6 +147,10 @@ const rangeStats = context.importers.computeRangeStats({
 assert.equal(rangeStats[0].mean, 2);
 assert.equal(rangeStats[0].deviation, 1);
 assert.equal(rangeStats[0].count, 2);
+assert.equal(
+  context.importers.formatRangeStatText(rangeStats[0]),
+  "Mean 2 u · SD 1 u · n=2"
+);
 
 console.log(`Importer tests passed: ${workoutDatasets.length} workout datasets, ${healthDatasets.length} health datasets`);
 

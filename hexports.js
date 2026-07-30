@@ -774,6 +774,7 @@ function makeWorkoutDataset({ id, label, unit, workouts, aggregationMethod, read
     kind: "workout",
     isAppleHealth: false,
     isWorkout: true,
+    displayMode: aggregationMethod === "sum" ? "event-bars" : "event-points",
     aggregationMethod,
     series,
     points
@@ -1112,7 +1113,7 @@ function renderRanges() {
         ? stats.map((stat) => `
             <div class="range-stat">
               <span>${escapeHtml(stat.label)}</span>
-              <strong title="Mean, population standard deviation, and observation count">μ ${escapeHtml(round(stat.mean))} · σ ${escapeHtml(round(stat.deviation))}${stat.unit ? ` ${escapeHtml(stat.unit)}` : ""} · n=${stat.count}</strong>
+              <strong title="Mean, population standard deviation, and observation count">${escapeHtml(formatRangeStatText(stat))}</strong>
             </div>
           `).join("")
         : '<div class="hint">No selected-series observations in this period.</div>';
@@ -1157,6 +1158,19 @@ function computeRangeStats(range) {
     .filter(Boolean);
 }
 
+function formatRangeStatText(stat) {
+  const unit = stat.unit ? ` ${stat.unit}` : "";
+  return `Mean ${round(stat.mean)}${unit} · SD ${round(stat.deviation)}${unit} · n=${stat.count}`;
+}
+
+function getRangeSummary(range) {
+  const dates = `${formatDateShortUtc(range.startX)} – ${formatDateShortUtc(range.endX)}`;
+  return {
+    title: range.label ? `${range.label} · ${dates}` : dates,
+    stats: computeRangeStats(range)
+  };
+}
+
 function updateSummaryChip() {
   const processed = getProcessedSeries();
   if (!processed.length) {
@@ -1197,6 +1211,12 @@ function chartPngBlob() {
   const margin = 18 * ratio;
   const legendGap = 18 * ratio;
   const lineHeight = 20 * ratio;
+  const visibleRangeSummaries = state.ranges
+    .filter((range) =>
+      range.endX >= state.chart.viewMinX &&
+      range.startX <= state.chart.viewMaxX
+    )
+    .map((range) => ({ range, ...getRangeSummary(range) }));
   const legend = getProcessedSeries().map((series) => ({
     color: series.color,
     label: `${series.datasetLabel === series.label ? series.label : `${series.datasetLabel} — ${series.label}`}${series.datasetUnit ? ` (${series.datasetUnit})` : ""}`
@@ -1215,9 +1235,18 @@ function chartPngBlob() {
     }
   });
   const headerHeight = (58 * ratio) + legendRows * lineHeight;
+  const footerHeight = visibleRangeSummaries.length
+    ? (
+        62 +
+        visibleRangeSummaries.reduce(
+          (height, summary) => height + 26 + Math.max(1, summary.stats.length) * 18,
+          0
+        )
+      ) * ratio
+    : 0;
   const output = document.createElement("canvas");
   output.width = elements.chartCanvas.width;
-  output.height = elements.chartCanvas.height + headerHeight;
+  output.height = elements.chartCanvas.height + headerHeight + footerHeight;
   const outputCtx = output.getContext("2d");
   outputCtx.fillStyle = getCssVariable("--surface");
   outputCtx.fillRect(0, 0, output.width, output.height);
@@ -1255,6 +1284,57 @@ function chartPngBlob() {
   });
 
   outputCtx.drawImage(elements.chartCanvas, 0, headerHeight);
+  if (visibleRangeSummaries.length) {
+    let footerY = headerHeight + elements.chartCanvas.height;
+    outputCtx.strokeStyle = getCssVariable("--line-strong");
+    outputCtx.lineWidth = ratio;
+    outputCtx.beginPath();
+    outputCtx.moveTo(margin, footerY + 1 * ratio);
+    outputCtx.lineTo(output.width - margin, footerY + 1 * ratio);
+    outputCtx.stroke();
+
+    footerY += 24 * ratio;
+    outputCtx.fillStyle = getCssVariable("--text");
+    outputCtx.font = `600 ${14 * ratio}px ${getCssVariable("--font-sans")}`;
+    outputCtx.fillText("Analyzed periods", margin, footerY);
+    footerY += 22 * ratio;
+
+    visibleRangeSummaries.forEach(({ range, title, stats }) => {
+      outputCtx.fillStyle = range.color;
+      outputCtx.fillRect(margin, footerY - 10 * ratio, 3 * ratio, 14 * ratio);
+      outputCtx.fillStyle = getCssVariable("--text");
+      outputCtx.font = `600 ${12 * ratio}px ${getCssVariable("--font-sans")}`;
+      outputCtx.fillText(
+        fitTextForContext(outputCtx, title, output.width - margin * 2 - 12 * ratio),
+        margin + 10 * ratio,
+        footerY
+      );
+      footerY += 18 * ratio;
+
+      outputCtx.fillStyle = getCssVariable("--text-muted");
+      outputCtx.font = `${11 * ratio}px ${getCssVariable("--font-sans")}`;
+      const statLines = stats.length
+        ? stats.map((stat) => `${stat.label}: ${formatRangeStatText(stat)}`)
+        : ["No selected-series observations in this period."];
+      statLines.forEach((line) => {
+        outputCtx.fillText(
+          fitTextForContext(outputCtx, line, output.width - margin * 2 - 10 * ratio),
+          margin + 10 * ratio,
+          footerY
+        );
+        footerY += 18 * ratio;
+      });
+      footerY += 8 * ratio;
+    });
+
+    outputCtx.fillStyle = getCssVariable("--text-muted");
+    outputCtx.font = `${10 * ratio}px ${getCssVariable("--font-sans")}`;
+    outputCtx.fillText(
+      "Mean and population SD use raw observations in each period; chart smoothing is not applied.",
+      margin,
+      footerY + 4 * ratio
+    );
+  }
   return new Promise((resolve, reject) => {
     output.toBlob((blob) => blob ? resolve(blob) : reject(new Error("PNG generation failed")), "image/png");
   });
@@ -1475,6 +1555,7 @@ function getSelectedRawSeries() {
           axis,
           datasetLabel: dataset.label,
           datasetUnit: dataset.unit || "",
+          displayMode: dataset.displayMode || "line",
           slotIndex
         });
       });
@@ -1603,6 +1684,12 @@ function drawChart() {
   // Compute Y ranges per axis
   const leftVisible = visibleSeries.filter((s) => s.axis === "left").flatMap((s) => s.visiblePoints.map((p) => p.y));
   const rightVisible = visibleSeries.filter((s) => s.axis === "right").flatMap((s) => s.visiblePoints.map((p) => p.y));
+  if (visibleSeries.some((series) => series.axis === "left" && series.displayMode === "event-bars" && series.visiblePoints.length)) {
+    leftVisible.push(0);
+  }
+  if (visibleSeries.some((series) => series.axis === "right" && series.displayMode === "event-bars" && series.visiblePoints.length)) {
+    rightVisible.push(0);
+  }
 
   const effectiveLeft = leftVisible.length ? leftVisible : rightVisible;
   const effectiveRight = rightVisible.length ? rightVisible : leftVisible;
@@ -1623,29 +1710,71 @@ function drawChart() {
   visibleSeries.forEach((series) => {
     if (!series.visiblePoints.length) return;
     const scaleY = series.axis === "right" ? scaleYRight : scaleYLeft;
-    ctx.strokeStyle = series.color;
-    ctx.lineWidth = series.lineWidth || 1;
-    ctx.beginPath();
-    series.visiblePoints.forEach((pt, i) => {
-      const x = scaleX(pt.x), y = scaleY(pt.y);
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    if (shouldDrawPoints(series.visiblePoints.length)) {
-      ctx.fillStyle = series.color;
-      const r = Math.max(2, (series.lineWidth || 1) + 0.75);
-      series.visiblePoints.forEach((pt) => {
-        ctx.beginPath();
-        ctx.arc(scaleX(pt.x), scaleY(pt.y), r, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    }
+    drawDataSeries(series, scaleX, scaleY);
   });
+
+  drawRangeSummaries({ padding, plotWidth, plotHeight, minX, maxX, scaleX });
 
   if (state.chart.hover) {
     drawHover({ visibleSeries, scaleX, scaleYLeft, scaleYRight, padding, plotWidth, plotHeight, minX, maxX });
   }
+}
+
+function drawDataSeries(series, scaleX, scaleY) {
+  if (series.displayMode === "event-bars") {
+    const baselineY = scaleY(0);
+    ctx.save();
+    ctx.strokeStyle = series.color;
+    ctx.fillStyle = series.color;
+    ctx.globalAlpha = 0.72;
+    ctx.lineWidth = Math.max(1, series.lineWidth || 1);
+    series.visiblePoints.forEach((point) => {
+      const x = scaleX(point.x);
+      const y = scaleY(point.y);
+      ctx.beginPath();
+      ctx.moveTo(x, baselineY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x, y, Math.max(1.75, (series.lineWidth || 1) + 0.5), 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.restore();
+    return;
+  }
+
+  if (series.displayMode === "event-points") {
+    drawSeriesPoints(series, scaleX, scaleY, true);
+    return;
+  }
+
+  ctx.strokeStyle = series.color;
+  ctx.lineWidth = series.lineWidth || 1;
+  ctx.beginPath();
+  series.visiblePoints.forEach((point, index) => {
+    const x = scaleX(point.x);
+    const y = scaleY(point.y);
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  if (shouldDrawPoints(series.visiblePoints.length)) {
+    drawSeriesPoints(series, scaleX, scaleY);
+  }
+}
+
+function drawSeriesPoints(series, scaleX, scaleY, emphasize = false) {
+  ctx.save();
+  ctx.fillStyle = series.color;
+  ctx.globalAlpha = emphasize ? 0.82 : 1;
+  const radius = Math.max(emphasize ? 2.25 : 2, (series.lineWidth || 1) + 0.75);
+  series.visiblePoints.forEach((point) => {
+    ctx.beginPath();
+    ctx.arc(scaleX(point.x), scaleY(point.y), radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
 }
 
 function drawRanges({ padding, plotWidth, plotHeight, minX, maxX, scaleX }) {
@@ -1682,15 +1811,125 @@ function drawRanges({ padding, plotWidth, plotHeight, minX, maxX, scaleX }) {
     ctx.strokeRect(startX, padding.top, width, plotHeight);
     ctx.globalAlpha = 1;
     ctx.setLineDash([]);
-    ctx.fillStyle = range.color;
-    ctx.font = `10px ${getCssVariable("--font-sans")}`;
-    ctx.textAlign = "left";
-    const label = range.label || `${formatDateShortUtc(range.startX)} – ${formatDateShortUtc(range.endX)}`;
-    ctx.fillText(label, startX + 5, padding.top + 13);
+    if (range.isDraft) {
+      ctx.fillStyle = range.color;
+      ctx.font = `10px ${getCssVariable("--font-sans")}`;
+      ctx.textAlign = "left";
+      ctx.fillText("New period", startX + 5, padding.top + 13);
+    }
     ctx.restore();
   });
 
   ctx.restore();
+}
+
+function drawRangeSummaries({ padding, plotWidth, plotHeight, minX, maxX, scaleX }) {
+  const visibleRanges = state.ranges
+    .filter((range) => range.endX >= minX && range.startX <= maxX)
+    .slice()
+    .sort((left, right) => left.startX - right.startX);
+  if (!visibleRanges.length) return;
+
+  const plotRight = padding.left + plotWidth;
+  const lineHeight = 16;
+  const cardPadding = 7;
+  const gap = 5;
+  const maxCardWidth = Math.max(120, Math.min(420, plotWidth - 8));
+  const occupied = [];
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(padding.left, padding.top, plotWidth, plotHeight);
+  ctx.clip();
+
+  visibleRanges.forEach((range) => {
+    const summary = getRangeSummary(range);
+    const availableDetailLines = Math.max(
+      1,
+      Math.floor((plotHeight - cardPadding * 2 - lineHeight) / lineHeight)
+    );
+    let detailLines = summary.stats.map(
+      (stat) => `${stat.label}: ${formatRangeStatText(stat)}`
+    );
+    if (!detailLines.length) {
+      detailLines = ["No selected-series observations in this period."];
+    } else if (detailLines.length > availableDetailLines) {
+      const visibleCount = Math.max(0, availableDetailLines - 1);
+      detailLines = [
+        ...detailLines.slice(0, visibleCount),
+        `+${detailLines.length - visibleCount} more selected series`
+      ];
+    }
+    const lines = [summary.title, ...detailLines];
+
+    ctx.font = `600 12px ${getCssVariable("--font-sans")}`;
+    let desiredWidth = ctx.measureText(lines[0]).width;
+    ctx.font = `11px ${getCssVariable("--font-sans")}`;
+    lines.slice(1).forEach((line) => {
+      desiredWidth = Math.max(desiredWidth, ctx.measureText(line).width);
+    });
+
+    const cardWidth = Math.min(maxCardWidth, Math.max(120, desiredWidth + cardPadding * 2));
+    const cardHeight = cardPadding * 2 + lines.length * lineHeight;
+    const rangeStart = scaleX(Math.max(range.startX, minX));
+    let cardX = clamp(rangeStart + gap, padding.left + 4, plotRight - cardWidth - 4);
+    let cardY = padding.top + gap;
+
+    while (
+      occupied.some((box) =>
+        cardX < box.right + gap &&
+        cardX + cardWidth > box.left - gap &&
+        cardY < box.bottom + gap &&
+        cardY + cardHeight > box.top - gap
+      ) &&
+      cardY + cardHeight + gap < padding.top + plotHeight
+    ) {
+      cardY += cardHeight + gap;
+    }
+    occupied.push({
+      left: cardX,
+      right: cardX + cardWidth,
+      top: cardY,
+      bottom: cardY + cardHeight
+    });
+
+    ctx.fillStyle = getCssVariable("--surface");
+    ctx.globalAlpha = 0.94;
+    ctx.fillRect(cardX, cardY, cardWidth, cardHeight);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = range.color;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cardX + 0.5, cardY + 0.5, cardWidth - 1, cardHeight - 1);
+    ctx.fillStyle = range.color;
+    ctx.fillRect(cardX, cardY, 3, cardHeight);
+
+    let textY = cardY + cardPadding + 11;
+    ctx.textAlign = "left";
+    ctx.fillStyle = getCssVariable("--text");
+    ctx.font = `600 12px ${getCssVariable("--font-sans")}`;
+    ctx.fillText(fitCanvasText(lines[0], cardWidth - cardPadding * 2), cardX + cardPadding, textY);
+    ctx.font = `11px ${getCssVariable("--font-sans")}`;
+    lines.slice(1).forEach((line) => {
+      textY += lineHeight;
+      ctx.fillText(fitCanvasText(line, cardWidth - cardPadding * 2), cardX + cardPadding, textY);
+    });
+  });
+
+  ctx.restore();
+}
+
+function fitCanvasText(text, maxWidth) {
+  return fitTextForContext(ctx, text, maxWidth);
+}
+
+function fitTextForContext(context, text, maxWidth) {
+  if (context.measureText(text).width <= maxWidth) return text;
+  const ellipsis = "…";
+  let fitted = text;
+  while (fitted.length && context.measureText(`${fitted}${ellipsis}`).width > maxWidth) {
+    fitted = fitted.slice(0, -1);
+  }
+  return `${fitted}${ellipsis}`;
 }
 
 function computeYRange(values) {
