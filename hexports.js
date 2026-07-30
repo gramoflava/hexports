@@ -1112,7 +1112,7 @@ function renderRanges() {
       const statsHtml = stats.length
         ? stats.map((stat) => `
             <div class="range-stat">
-              <span>${escapeHtml(stat.label)}</span>
+              <span><span class="series-color-dot" style="--series-color:${stat.color}"></span>${escapeHtml(getRangeStatLabel(stat))}</span>
               <strong title="Mean, population standard deviation, and observation count">${escapeHtml(formatRangeStatText(stat))}</strong>
             </div>
           `).join("")
@@ -1149,6 +1149,10 @@ function computeRangeStats(range) {
         label: selected.datasetLabel === selected.label
           ? selected.label
           : `${selected.datasetLabel} — ${selected.label}`,
+        datasetLabel: selected.datasetLabel,
+        seriesLabel: selected.label,
+        shortLabel: selected.shortLabel,
+        color: selected.color,
         unit: selected.datasetUnit,
         count: values.length,
         mean,
@@ -1161,6 +1165,23 @@ function computeRangeStats(range) {
 function formatRangeStatText(stat) {
   const unit = stat.unit ? ` ${stat.unit}` : "";
   return `Mean ${round(stat.mean)}${unit} · SD ${round(stat.deviation)}${unit} · n=${stat.count}`;
+}
+
+function getRangeStatLabel(stat) {
+  const seriesLabel = stat.shortLabel || stat.seriesLabel;
+  if (
+    seriesLabel &&
+    !/^value$/i.test(seriesLabel) &&
+    seriesLabel !== stat.datasetLabel
+  ) {
+    return seriesLabel;
+  }
+  return stat.datasetLabel || stat.seriesLabel || stat.label;
+}
+
+function formatRangeStatRowText(stat, statCount) {
+  const prefix = statCount > 1 ? `${getRangeStatLabel(stat)} · ` : "";
+  return `${prefix}${formatRangeStatText(stat)}`;
 }
 
 function getRangeSummary(range) {
@@ -1316,13 +1337,28 @@ function chartPngBlob() {
 
       outputCtx.fillStyle = getCssVariable("--text-muted");
       outputCtx.font = `${11 * ratio}px ${getCssVariable("--font-sans")}`;
-      const statLines = stats.length
-        ? stats.map((stat) => `${stat.label}: ${formatRangeStatText(stat)}`)
-        : ["No selected-series observations in this period."];
-      statLines.forEach((line) => {
+      const statRows = stats.length
+        ? stats.map((stat) => ({
+            color: stat.color,
+            text: formatRangeStatRowText(stat, stats.length)
+          }))
+        : [{ color: "", text: "No selected-series observations in this period." }];
+      statRows.forEach((row) => {
+        const dotSpace = row.color ? 12 * ratio : 0;
+        if (row.color) {
+          outputCtx.fillStyle = row.color;
+          outputCtx.beginPath();
+          outputCtx.arc(margin + 14 * ratio, footerY - 4 * ratio, 3.5 * ratio, 0, Math.PI * 2);
+          outputCtx.fill();
+          outputCtx.fillStyle = getCssVariable("--text-muted");
+        }
         outputCtx.fillText(
-          fitTextForContext(outputCtx, line, output.width - margin * 2 - 10 * ratio),
-          margin + 10 * ratio,
+          fitTextForContext(
+            outputCtx,
+            row.text,
+            output.width - margin * 2 - 10 * ratio - dotSpace
+          ),
+          margin + 10 * ratio + dotSpace,
           footerY
         );
         footerY += 18 * ratio;
@@ -1851,29 +1887,39 @@ function drawRangeSummaries({ padding, plotWidth, plotHeight, minX, maxX, scaleX
       1,
       Math.floor((plotHeight - cardPadding * 2 - lineHeight) / lineHeight)
     );
-    let detailLines = summary.stats.map(
-      (stat) => `${stat.label}: ${formatRangeStatText(stat)}`
-    );
-    if (!detailLines.length) {
-      detailLines = ["No selected-series observations in this period."];
-    } else if (detailLines.length > availableDetailLines) {
+    let detailRows = summary.stats.map((stat) => ({
+      color: stat.color,
+      text: formatRangeStatRowText(stat, summary.stats.length)
+    }));
+    if (!detailRows.length) {
+      detailRows = [{ color: "", text: "No selected-series observations in this period." }];
+    } else if (detailRows.length > availableDetailLines) {
       const visibleCount = Math.max(0, availableDetailLines - 1);
-      detailLines = [
-        ...detailLines.slice(0, visibleCount),
-        `+${detailLines.length - visibleCount} more selected series`
+      detailRows = [
+        ...detailRows.slice(0, visibleCount),
+        {
+          color: "",
+          text: `+${detailRows.length - visibleCount} more selected series`
+        }
       ];
     }
-    const lines = [summary.title, ...detailLines];
+    const rows = [
+      { color: "", text: summary.title, isTitle: true },
+      ...detailRows
+    ];
 
     ctx.font = `600 12px ${getCssVariable("--font-sans")}`;
-    let desiredWidth = ctx.measureText(lines[0]).width;
+    let desiredWidth = ctx.measureText(rows[0].text).width;
     ctx.font = `11px ${getCssVariable("--font-sans")}`;
-    lines.slice(1).forEach((line) => {
-      desiredWidth = Math.max(desiredWidth, ctx.measureText(line).width);
+    rows.slice(1).forEach((row) => {
+      desiredWidth = Math.max(
+        desiredWidth,
+        ctx.measureText(row.text).width + (row.color ? 12 : 0)
+      );
     });
 
     const cardWidth = Math.min(maxCardWidth, Math.max(120, desiredWidth + cardPadding * 2));
-    const cardHeight = cardPadding * 2 + lines.length * lineHeight;
+    const cardHeight = cardPadding * 2 + rows.length * lineHeight;
     const rangeStart = scaleX(Math.max(range.startX, minX));
     let cardX = clamp(rangeStart + gap, padding.left + 4, plotRight - cardWidth - 4);
     let cardY = padding.top + gap;
@@ -1910,11 +1956,23 @@ function drawRangeSummaries({ padding, plotWidth, plotHeight, minX, maxX, scaleX
     ctx.textAlign = "left";
     ctx.fillStyle = getCssVariable("--text");
     ctx.font = `600 12px ${getCssVariable("--font-sans")}`;
-    ctx.fillText(fitCanvasText(lines[0], cardWidth - cardPadding * 2), cardX + cardPadding, textY);
+    ctx.fillText(fitCanvasText(rows[0].text, cardWidth - cardPadding * 2), cardX + cardPadding, textY);
     ctx.font = `11px ${getCssVariable("--font-sans")}`;
-    lines.slice(1).forEach((line) => {
+    rows.slice(1).forEach((row) => {
       textY += lineHeight;
-      ctx.fillText(fitCanvasText(line, cardWidth - cardPadding * 2), cardX + cardPadding, textY);
+      const dotSpace = row.color ? 12 : 0;
+      if (row.color) {
+        ctx.fillStyle = row.color;
+        ctx.beginPath();
+        ctx.arc(cardX + cardPadding + 4, textY - 3.5, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = getCssVariable("--text");
+      ctx.fillText(
+        fitCanvasText(row.text, cardWidth - cardPadding * 2 - dotSpace),
+        cardX + cardPadding + dotSpace,
+        textY
+      );
     });
   });
 

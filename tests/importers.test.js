@@ -39,6 +39,8 @@ const testableScript = mainScript.replace(/\n\s*init\(\);\s*$/, "") + `
     computeAggregated,
     computeRangeStats,
     formatRangeStatText,
+    getRangeStatLabel,
+    formatRangeStatRowText,
     state
   };
 `;
@@ -151,6 +153,16 @@ assert.equal(
   context.importers.formatRangeStatText(rangeStats[0]),
   "Mean 2 u · SD 1 u · n=2"
 );
+assert.equal(context.importers.getRangeStatLabel(rangeStats[0]), "Analysis");
+assert.equal(
+  context.importers.formatRangeStatRowText(rangeStats[0], 1),
+  "Mean 2 u · SD 1 u · n=2"
+);
+assert.equal(
+  context.importers.formatRangeStatRowText(rangeStats[0], 2),
+  "Analysis · Mean 2 u · SD 1 u · n=2"
+);
+assert.equal(rangeStats[0].color, "#000");
 
 console.log(`Importer tests passed: ${workoutDatasets.length} workout datasets, ${healthDatasets.length} health datasets`);
 
