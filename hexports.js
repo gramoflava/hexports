@@ -1175,13 +1175,16 @@ function updateSummaryChip() {
   const processed = getProcessedSeries();
   if (!processed.length) {
     elements.summaryChip.textContent = "No data";
+    elements.summaryChip.title = "No data";
     return;
   }
   const labels = state.chartSlots
     .map((slot) => state.datasets.find((d) => d.id === slot.datasetId)?.label)
     .filter(Boolean);
   const totalPts = getSelectedRawSeries().reduce((sum, series) => sum + series.points.length, 0);
-  elements.summaryChip.textContent = `${labels.join(" + ")} • ${processed.length} series • ${totalPts.toLocaleString()} pts`;
+  const summary = `${labels.join(" + ")} • ${processed.length} series • ${totalPts.toLocaleString()} pts`;
+  elements.summaryChip.textContent = summary;
+  elements.summaryChip.title = summary;
 }
 
 function updateToolbar() {
@@ -1894,7 +1897,7 @@ function drawRangeSummaries({ padding, plotWidth, plotHeight, minX, maxX, scaleX
     });
 
     ctx.fillStyle = getCssVariable("--surface");
-    ctx.globalAlpha = 0.94;
+    ctx.globalAlpha = 0.5;
     ctx.fillRect(cardX, cardY, cardWidth, cardHeight);
     ctx.globalAlpha = 1;
     ctx.strokeStyle = range.color;
