@@ -1,0 +1,24 @@
+{
+  "exportInfo": {
+    "appVersion": "1.0",
+    "dataTypes": [
+      "dietaryProtein",
+      "stepCount"
+    ],
+    "measurementSystem": "metric"
+  },
+  "dietaryProtein": [
+    {
+      "date": "2025-01-01T12:00:00Z",
+      "unit": "g",
+      "value": 80
+    }
+  ],
+  "stepCount": [
+    {
+      "date": "2025-01-01T12:00:00Z",
+      "unit": "count",
+      "value": 10000
+    }
+  ]
+}

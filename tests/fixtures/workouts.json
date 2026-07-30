@@ -1,0 +1,69 @@
+{
+  "exportInfo": {
+    "activityTypes": [
+      "walking",
+      "traditionalStrengthTraining"
+    ],
+    "workoutCount": 3
+  },
+  "workouts": [
+    {
+      "activityType": "walking",
+      "duration": 1800,
+      "startDate": "2025-01-02T08:00:00Z",
+      "endDate": "2025-01-02T08:30:00Z",
+      "source": "Example Watch",
+      "events": [],
+      "statistics": {
+        "HKQuantityTypeIdentifierActiveEnergyBurned": {
+          "sum": 150,
+          "unit": "kcal"
+        },
+        "HKQuantityTypeIdentifierHeartRate": {
+          "average": 112,
+          "min": 82,
+          "max": 138,
+          "unit": "count/min"
+        }
+      }
+    },
+    {
+      "activityType": "traditionalStrengthTraining",
+      "duration": 3600,
+      "startDate": "2025-01-04T18:00:00Z",
+      "endDate": "2025-01-04T19:00:00Z",
+      "source": "Example Watch",
+      "events": [],
+      "statistics": {
+        "HKQuantityTypeIdentifierActiveEnergyBurned": {
+          "sum": 300,
+          "unit": "kcal"
+        },
+        "HKQuantityTypeIdentifierHeartRate": {
+          "average": 124,
+          "min": 76,
+          "max": 162,
+          "unit": "count/min"
+        }
+      }
+    },
+    {
+      "activityType": "walking",
+      "duration": 1200,
+      "startDate": "2025-02-01T09:00:00Z",
+      "endDate": "2025-02-01T09:20:00Z",
+      "source": "Example Watch",
+      "events": [],
+      "statistics": {
+        "HKQuantityTypeIdentifierActiveEnergyBurned": {
+          "sum": 90,
+          "unit": "kcal"
+        },
+        "HKQuantityTypeIdentifierAppleExerciseTime": {
+          "sum": 20,
+          "unit": "min"
+        }
+      }
+    }
+  ]
+}
