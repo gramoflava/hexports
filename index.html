@@ -18,6 +18,7 @@
   </script>
   <link rel="stylesheet" href="gramofdesign/gramof.css">
   <link rel="icon" href="gramofdesign/marks/hexports.svg" type="image/svg+xml">
+  <script defer src="gramofdesign/tools.js"></script>
   <script defer src="gramofdesign/theme.js"></script>
   <link rel="stylesheet" href="hexports.css">
 </head>
@@ -26,39 +27,13 @@
   <header class="appbar">
     <span class="brand">
       <img class="brand-icon" src="gramofdesign/marks/hexports.svg" alt="">
-      hexports
+      <span class="brand__name">hexports</span>
     </span>
     <span class="appbar__sep"></span>
     <button class="btn btn--primary" id="openDataButton" type="button">Open data</button>
     <span class="appbar__spacer"></span>
     <span class="hint hide-narrow" id="sourceName">No file open</span>
-    <button type="button" id="kofi-floater" class="btn btn--quiet btn--icon kofi-trigger"
-      title="Support my work" aria-label="Support my work">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M3 14c.83 .642 2.077 1.017 3.5 1c1.423 .017 2.67 -.358 3.5 -1c.83 -.642 2.077 -1.017 3.5 -1c1.423 -.017 2.67 .358 3.5 1"></path>
-        <path d="M8 3a2.4 2.4 0 0 0 -1 2a2.4 2.4 0 0 0 1 2M12 3a2.4 2.4 0 0 0 -1 2a2.4 2.4 0 0 0 1 2"></path>
-        <path d="M3 10h14v5a6 6 0 0 1 -6 6H9a6 6 0 0 1 -6 -6v-5zM16.746 16.726a3 3 0 1 0 .252 -5.555"></path>
-      </svg>
-    </button>
-    <div class="segmented segmented--icon" role="group" aria-label="Color theme" data-theme-switch>
-      <button class="segmented__btn" type="button" data-theme="light" aria-label="Light" title="Light"
-        aria-pressed="false">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="4"></circle>
-          <path
-            d="M6.343 17.657l-1.414 1.414M6.343 6.343L4.929 4.929M17.657 6.343l1.414 -1.414M17.657 17.657l1.414 1.414M12 20v2M12 2v2M20 12h2M2 12h2">
-          </path>
-        </svg>
-      </button>
-      <button class="segmented__btn" type="button" data-theme="auto" aria-label="Auto" title="Auto"
-        aria-pressed="false"><span>A</span></button>
-      <button class="segmented__btn" type="button" data-theme="dark" aria-label="Dark" title="Dark"
-        aria-pressed="false">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 3h.393a7.5 7.5 0 0 0 7.92 12.446A9 9 0 1 1 12 2.992z"></path>
-        </svg>
-      </button>
-    </div>
+    <div class="site-tools" data-site-tools></div>
   </header>
 
   <div class="workspace">
@@ -244,42 +219,6 @@
 
   <script src="hexports.js"></script>
 
-  <div id="kofi-panel" class="kofi-panel hidden">
-    <iframe id="kofiframe" class="kofi-frame"
-      data-src="https://ko-fi.com/gramoflava/?hidefeed=true&amp;widget=true&amp;embed=true&amp;preview=true"
-      height="660" title="Support lava on Ko-fi" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-  </div>
-
-  <button type="button" id="kofi-close" class="kofi-floater hidden" aria-label="Close support panel">
-    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="9"></circle>
-      <path d="M10 10l4 4m0-4l-4 4"></path>
-    </svg>
-  </button>
-
-  <script>
-    (function() {
-      const floater = document.getElementById('kofi-floater');
-      const panel = document.getElementById('kofi-panel');
-      const closeBtn = document.getElementById('kofi-close');
-      const frame = document.getElementById('kofiframe');
-
-      if (floater && panel && closeBtn) {
-        floater.addEventListener('click', () => {
-          if (frame && !frame.getAttribute('src')) frame.src = frame.dataset.src;
-          floater.classList.add('hidden');
-          closeBtn.classList.remove('hidden');
-          panel.classList.remove('hidden');
-        });
-
-        closeBtn.addEventListener('click', () => {
-          panel.classList.add('hidden');
-          closeBtn.classList.add('hidden');
-          floater.classList.remove('hidden');
-        });
-      }
-    })();
-  </script>
 </body>
 
 </html>
