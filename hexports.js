@@ -2094,7 +2094,7 @@ function drawMarkers({ padding, plotHeight, minX, maxX, scaleX }) {
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = getCssVariable("--text-on-accent");
+      ctx.strokeStyle = getCssVariable("--text-on-color");
       ctx.lineWidth = 1.8;
       ctx.lineCap = "round";
       ctx.beginPath();
